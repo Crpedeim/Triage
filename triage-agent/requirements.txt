@@ -1,0 +1,30 @@
+# ─── Core Agent Framework ───
+langgraph>=0.4.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+
+# ─── LLM Providers ───
+langchain-anthropic>=0.3.0       # Claude API integration
+langchain-openai>=0.3.0          # OpenAI fallback (optional)
+
+# ─── RAG Pipeline ───
+chromadb>=0.5.0                  # Vector store
+sentence-transformers>=3.0.0     # Local embedding model (all-MiniLM-L6-v2)
+
+# ─── PDF Processing (for guideline ingestion) ───
+pymupdf>=1.24.0                  # PDF text extraction (import as fitz)
+langchain-text-splitters>=0.3.0  # RecursiveCharacterTextSplitter
+
+# ─── Data Validation ───
+pydantic>=2.0.0                  # Structured schemas
+
+# ─── Frontend ───
+gradio>=5.0.0
+
+# ─── Testing ───
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+
+# ─── Utilities ───
+python-dotenv>=1.0.0             # .env file for API keys
+rich>=13.0.0                     # Pretty printing for debugging
