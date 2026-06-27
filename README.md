@@ -1,0 +1,80 @@
+# TriageAI — Multi-Agent Clinical Triage System
+
+A multi-agent pediatric triage assistant built on **LangGraph**. It interviews a caregiver about a child's symptoms, retrieves relevant clinical guidelines, reasons over them, and produces a structured triage recommendation — all coordinated by a supervisor agent over a shared, type-safe state.
+
+> **Disclaimer:** an educational project, not a medical device. Triage logic is grounded in published IMNCI guidance but must not be used for real clinical decisions.
+
+---
+
+## What it does
+
+Given a free-text complaint (e.g. *"3-year-old has had a cough for 4 days and is breathing fast"*), the system:
+1. **Interviews** the caregiver, asking one focused follow-up question at a time until it has enough information.
+2. **Retrieves** matching clinical guidelines from a vector store (RAG).
+3. **Reasons** over symptoms + guidelines to classify severity.
+4. **Outputs** a structured triage card with one of four levels mapped to **IMNCI** classifications: **Emergency** (immediate referral), **Urgent** (same-day), **Standard** (48–72h), or **Self-care** (home management).
+
+---
+
+## Architecture — hub-and-spoke multi-agent graph
+
+```
+                ┌──────────────┐
+   user ──────► │  SUPERVISOR  │ ◄─────── (every agent returns here)
+                └──────┬───────┘
+            conditional│ routing (route_next)
+        ┌──────────────┼──────────────┬──────────────┐
+        ▼              ▼              ▼              ▼
+   ┌─────────┐   ┌──────────┐   ┌─────────┐   ┌─────────┐
+   │ INTAKE  │   │RETRIEVAL │   │ TRIAGE  │   │ OUTPUT  │──► END
+   │interview│   │ RAG over │   │clinical │   │ triage  │
+   │ (HITL)  │   │guidelines│   │reasoner │   │  card   │
+   └─────────┘   └──────────┘   └─────────┘   └─────────┘
+```
+
+**Four agents, one supervisor.** Agents never call each other directly — every agent reports back to the supervisor, which re-reads state and decides the next step. This keeps routing logic in one place and the agents independently testable.
+
+- **Supervisor** — pure-Python routing; reads state and dispatches to the right agent via conditional edges.
+- **Intake** — LLM symptom interviewer; asks one question per turn until `intake_complete`.
+- **Retrieval** — embeds the case and searches a vector store for relevant clinical guidelines (RAG).
+- **Triage** — clinical reasoner producing a structured, validated `TriageResult`.
+- **Output** — formats the final triage card.
+
+---
+
+## Engineering highlights
+
+- **Human-in-the-loop:** `interrupt_before=["intake"]` pauses the graph before each interview turn so the UI can surface the question and wait for the caregiver's reply — a real conversational loop, not a one-shot prompt.
+- **Stateful persistence:** a LangGraph checkpointer keyed by `thread_id` restores exact graph state between turns/HTTP requests, so multi-turn sessions resume seamlessly. (`MemorySaver` in dev; swap to `SqliteSaver`/`PostgresSaver` for production with zero other changes.)
+- **Type-safe shared state:** Pydantic models (`Symptom`, `VitalSigns`, `PatientSummary`, `SuspectedCondition`, `TriageResult`) are the single source of truth; LLMs emit them directly via `.with_structured_output()`, so malformed fields are caught at the boundary.
+- **RAG grounding:** clinical guidelines are ingested, embedded, and retrieved via a vector-search tool, so triage decisions cite source guidance rather than relying on the model's parametric memory.
+- **Tested:** a pytest suite covers state, the graph wiring, individual agents, and the RAG layer.
+
+---
+
+## Repo structure
+
+```
+agents/      supervisor (router) · intake · retrieval · triage
+rag/         embeddings · ingest · store        (vector store + RAG)
+tools/       vector_search
+prompts/     per-agent prompt templates
+state.py     Pydantic data models + LangGraph TypedDict state + enums
+graph.py     StateGraph wiring, interrupts, checkpointing, run_turn()
+output.py    triage-card formatting
+app.py       Gradio frontend
+tests/       test_state · test_graph · test_agents · test_rag
+```
+
+## Run
+
+```bash
+pip install -r requirements.txt
+# set your LLM API key in the environment
+python app.py        # launches the Gradio interface
+pytest               # run the test suite
+```
+
+## Tech
+
+LangGraph · LangChain · Pydantic · a vector store for RAG · Gradio · pytest.
