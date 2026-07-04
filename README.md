@@ -16,29 +16,80 @@ Given a free-text complaint (e.g. *"3-year-old has had a cough for 4 days and is
 
 ---
 
-## Architecture — hub-and-spoke multi-agent graph
+<!-- ============================================================= -->
+<!-- Paste these two sections into your README where indicated.    -->
+<!-- GitHub renders the Mermaid diagram natively — no image file.  -->
+<!-- ============================================================= -->
+
+## Architecture
+
+A **hub-and-spoke multi-agent graph** built on LangGraph. The supervisor is the hub; every agent reports back to it, and the supervisor alone decides who runs next. Agents never call each other directly — which keeps routing in one place and each agent independently testable.
+
+```mermaid
+graph TD
+    START([User message]) --> SUP{{Supervisor<br/>router}}
+
+    SUP -->|intake incomplete| INT[Intake Agent<br/>symptom interview]
+    SUP -->|needs guidelines| RET[Retrieval Agent<br/>RAG over guidelines]
+    SUP -->|ready to assess| TRI[Triage Agent<br/>clinical reasoner]
+    SUP -->|assessment done| OUT[Output<br/>triage card]
+
+    INT -.->|returns to hub| SUP
+    RET -.->|returns to hub| SUP
+    TRI -.->|returns to hub| SUP
+    OUT --> ENDN([END])
+
+    style SUP fill:#c0392b,color:#fff
+    style INT fill:#e67e22,color:#fff
+    style RET fill:#2980b9,color:#fff
+    style TRI fill:#27ae60,color:#fff
+    style OUT fill:#8e44ad,color:#fff
+```
+
+**Human-in-the-loop:** `interrupt_before=["intake"]` pauses the graph before each interview turn, so the UI can surface the question and wait for the caregiver's reply — a real multi-turn conversation, not a one-shot prompt.
+
+**Stateful persistence:** a checkpointer keyed by `thread_id` restores exact graph state between turns, so a session resumes from where it left off. `MemorySaver` in dev; swap to `SqliteSaver`/`PostgresSaver` for production with no other code changes.
+
+---
+
+## Example session
+
+> *Illustrative run showing the multi-turn flow; the triage logic is grounded in IMNCI guidance retrieved via RAG.*
 
 ```
-                ┌──────────────┐
-   user ──────► │  SUPERVISOR  │ ◄─────── (every agent returns here)
-                └──────┬───────┘
-            conditional│ routing (route_next)
-        ┌──────────────┼──────────────┬──────────────┐
-        ▼              ▼              ▼              ▼
-   ┌─────────┐   ┌──────────┐   ┌─────────┐   ┌─────────┐
-   │ INTAKE  │   │RETRIEVAL │   │ TRIAGE  │   │ OUTPUT  │──► END
-   │interview│   │ RAG over │   │clinical │   │ triage  │
-   │ (HITL)  │   │guidelines│   │reasoner │   │  card   │
-   └─────────┘   └──────────┘   └─────────┘   └─────────┘
+👤 User:      My 3-year-old has had a cough for 4 days and seems to be
+              breathing fast.
+
+🤖 Intake:    How many breaths per minute is the child taking, and for how
+              long has the fast breathing been going on?
+
+👤 User:      About 50 per minute, started 2 days ago.
+
+🤖 Intake:    Any fever, and is the child still drinking and feeding normally?
+
+👤 User:      Mild fever since yesterday. Still drinking but eating less.
+
+🤖 Intake:    Is there any chest indrawing, bluish lips, or unusual drowsiness?
+
+👤 User:      No blue lips or drowsiness, but the chest does seem to pull in.
+
+🔍 Retrieval: [searching clinical guidelines: "fast breathing + chest
+              indrawing, age 3" → IMNCI pneumonia criteria]
+
+🧠 Triage:    Reasoning over symptoms + retrieved guidance…
+
+┌─────────────────────────────────────────────────────────────┐
+│  TRIAGE RESULT                                    ⚠  URGENT   │
+├─────────────────────────────────────────────────────────────┤
+│  Suspected: Pneumonia (fast breathing + chest indrawing)      │
+│  Level:     URGENT — seek same-day medical care               │
+│  Basis:     Respiratory rate ≥40/min with lower chest         │
+│             indrawing in a child aged 1–5 (IMNCI)             │
+│  Advise:    Do not wait; visit a clinic or health worker      │
+│             today. Watch for blue lips or drowsiness →        │
+│             emergency referral.                               │
+└─────────────────────────────────────────────────────────────┘
 ```
-
-**Four agents, one supervisor.** Agents never call each other directly — every agent reports back to the supervisor, which re-reads state and decides the next step. This keeps routing logic in one place and the agents independently testable.
-
-- **Supervisor** — pure-Python routing; reads state and dispatches to the right agent via conditional edges.
-- **Intake** — LLM symptom interviewer; asks one question per turn until `intake_complete`.
-- **Retrieval** — embeds the case and searches a vector store for relevant clinical guidelines (RAG).
-- **Triage** — clinical reasoner producing a structured, validated `TriageResult`.
-- **Output** — formats the final triage card.
 
 ---
 
