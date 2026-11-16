@@ -6,26 +6,25 @@ Inspect shared state and decide which agent acts next.
 This is pure Python — NO LLM call. Routing decisions are too critical
 to leave to an LLM.
 
-ROUTING LOGIC:
-  intake_complete=False            → route to "intake"
-  intake_complete=True,
-    retrieval not done             → route to "retrieval"
-  retrieval done,
-    triage not done                → route to "triage"
-  triage done,
-    confidence >= threshold        → route to "output"
-  triage done,
-    confidence < threshold,
-    cycles < max_cycles            → route back to "intake" (FEEDBACK LOOP)
-  triage done,
-    confidence < threshold,
-    cycles >= max_cycles           → route to "output" (best-effort)
+ROUTING LOGIC (route_next):
+  awaiting_user=True               → "end"   (intake asked a question; this run
+                                              ends and the next user message
+                                              starts a new run on the saved state)
+  intake_complete=False            → "intake"
+  intake complete, no guidelines   → "retrieval"
+  guidelines present, no result    → "triage"
+  result, confidence >= threshold  → "output"
+  result, confidence < threshold,
+    cycles left                    → "intake"  (FEEDBACK LOOP)
+  result, confidence < threshold,
+    no cycles left                 → "output"  (best effort)
 
-RETURNS:
-  current_agent  — which agent runs next (string)
-  phase          — updated phase string
-  cycle_count    — incremented if looping back to intake
-  intake_complete — reset to False if looping back
+FEEDBACK LOOP:
+  When the supervisor sends a low-confidence case back to intake it clears the
+  previous triage result and retrieval output. After intake has asked the
+  triage agent's follow-up questions and completes again, the normal path
+  (retrieval → triage) re-runs on the new information. Without the reset the
+  stale low-confidence result would keep routing back to intake forever.
 
 This function is also used as the conditional edge function in the LangGraph
 graph definition (graph.add_conditional_edges).
@@ -40,23 +39,27 @@ def supervisor(state: TriageState) -> dict:
     """
     Supervisor node: inspects state and returns routing decision.
 
-    Called by LangGraph as a node. Returns a partial state update
-    with current_agent and phase fields updated.
+    Called by LangGraph as a node. Returns a partial state update. The
+    conditional edge then calls route_next() on the UPDATED state, so the
+    update and the edge always agree.
     """
-    routing = route_next(state)
-    next_agent = routing
-
-    # Build the state update
+    next_agent = route_next(state)
     update: dict = {"current_agent": next_agent}
 
     if next_agent == "intake":
-        # Either starting or cycling back
-        current_phase = state.get("phase", Phase.INTAKE.value)
-        if current_phase == Phase.TRIAGE.value:
-            # We're cycling back — this is the feedback loop
-            update["phase"] = Phase.INTAKE.value
-            update["intake_complete"] = False
-            update["cycle_count"] = state.get("cycle_count", 0) + 1
+        if _is_low_confidence_loop_back(state):
+            update.update(
+                phase=Phase.INTAKE.value,
+                intake_complete=False,
+                cycle_count=state.get("cycle_count", 0) + 1,
+                # Clear stale outputs so triage (and retrieval) re-run after
+                # the follow-up questions are answered.
+                triage_result=None,
+                triage_confidence=0.0,
+                retrieved_guidelines=[],
+                retrieval_queries=[],
+                retrieval_sufficient=False,
+            )
         else:
             update["phase"] = Phase.INTAKE.value
 
@@ -69,61 +72,49 @@ def supervisor(state: TriageState) -> dict:
     elif next_agent == "output":
         update["phase"] = Phase.DONE.value
 
+    # "end": leave phase unchanged (still intake, waiting for the user)
     return update
+
+
+def _is_low_confidence_loop_back(state: TriageState) -> bool:
+    return (
+        state.get("triage_result") is not None
+        and state.get("triage_confidence", 0.0) < CONFIDENCE_THRESHOLD
+    )
 
 
 def route_next(state: TriageState) -> str:
     """
     Core routing function. Returns the name of the next node to execute.
 
-    This function is passed to graph.add_conditional_edges() as the
-    routing function. It reads state and returns a string key that
-    maps to a node name in the graph.
-
-    Return values: "intake" | "retrieval" | "triage" | "output"
+    Return values: "intake" | "retrieval" | "triage" | "output" | "end"
     """
+    if state.get("awaiting_user", False):
+        return "end"
+
     intake_complete: bool = state.get("intake_complete", False)
-    retrieval_sufficient: bool = state.get("retrieval_sufficient", False)
     retrieved_guidelines: list = state.get("retrieved_guidelines", [])
+    retrieval_sufficient: bool = state.get("retrieval_sufficient", False)
     triage_result = state.get("triage_result")
     triage_confidence: float = state.get("triage_confidence", 0.0)
     cycle_count: int = state.get("cycle_count", 0)
     max_cycles: int = state.get("max_cycles", 3)
-    phase: str = state.get("phase", Phase.INTAKE.value)
 
-    # ── Case 1: Intake not done → go to intake ───────────────────────────
+    # Triage has produced a result: accept it, or loop back for more information.
+    if triage_result is not None:
+        if triage_confidence >= CONFIDENCE_THRESHOLD:
+            return "output"
+        if cycle_count < max_cycles - 1:
+            return "intake"
+        return "output"
+
     if not intake_complete:
         return "intake"
 
-    # ── Case 2: Intake done, retrieval not done → go to retrieval ────────
-    if intake_complete and not retrieval_sufficient and not retrieved_guidelines:
+    if not retrieval_sufficient and not retrieved_guidelines:
         return "retrieval"
 
-    # ── Case 3: Retrieval done, triage not done → go to triage ───────────
-    if (intake_complete and
-            (retrieval_sufficient or retrieved_guidelines) and
-            triage_result is None):
-        return "triage"
-
-    # ── Case 4: Triage done with HIGH confidence → output ─────────────────
-    if triage_result is not None and triage_confidence >= CONFIDENCE_THRESHOLD:
-        return "output"
-
-    # ── Case 5: Triage done with LOW confidence (FEEDBACK LOOP) ───────────
-    if triage_result is not None and triage_confidence < CONFIDENCE_THRESHOLD:
-        if cycle_count < max_cycles - 1:
-            # Loop back to intake with specific follow-up questions
-            return "intake"
-        else:
-            # Max cycles reached — output best-effort result
-            return "output"
-
-    # ── Case 6: Retrieval done, need to re-run triage (after feedback) ────
-    if phase == Phase.INTAKE.value and intake_complete and retrieved_guidelines:
-        return "triage"
-
-    # Default: go to intake
-    return "intake"
+    return "triage"
 
 
 def has_diagnostic_ambiguity(state: TriageState) -> bool:

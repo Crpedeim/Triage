@@ -53,7 +53,7 @@ else:
 
 def chat(
     user_message: str,
-    history: list[tuple[str, str]],
+    history: list[dict],
     thread_id: str,
 ) -> tuple[list, str, str, str]:
     """
@@ -61,7 +61,8 @@ def chat(
 
     Args:
         user_message: What the health worker typed.
-        history:      Gradio chat history [(user_msg, bot_msg), ...]
+        history:      Gradio chat history in "messages" format
+                      [{"role": "user"|"assistant", "content": str}, ...]
         thread_id:    Unique session ID (stored in gr.State)
 
     Returns:
@@ -76,7 +77,8 @@ def chat(
             "Run this command first:\n```\npython -m rag.ingest --sample\n```\n"
             "Then restart the app."
         )
-        history.append((user_message, warning))
+        history = history + [{"role": "user", "content": user_message},
+                             {"role": "assistant", "content": warning}]
         return history, "", _status_text("idle"), ""
 
     # Process the turn through LangGraph
@@ -84,7 +86,8 @@ def chat(
 
     # Update chat history
     bot_message = result["message"]
-    history.append((user_message, bot_message))
+    history = history + [{"role": "user", "content": user_message},
+                         {"role": "assistant", "content": bot_message}]
 
     # Build outputs
     status = result["status"]
@@ -140,8 +143,7 @@ with gr.Blocks(
             chatbot = gr.Chatbot(
                 label="Clinical Intake",
                 height=460,
-                bubble_full_width=False,
-                avatar_images=(None, "🏥"),
+                type="messages",
             )
             with gr.Row():
                 msg_input = gr.Textbox(

@@ -350,6 +350,7 @@ class TriageState(TypedDict):
     follow_up_questions: list[str]               # If confidence low, what to ask next
 
     # ─── Control Flow ───
+    awaiting_user: bool                          # Intake asked a question; end this run and wait for the reply
     current_agent: str                           # Which agent is active
     cycle_count: int                             # How many intake->triage cycles so far
     max_cycles: int                              # Hard limit on cycles (default: 3)
@@ -377,6 +378,7 @@ def create_initial_state() -> dict:
         "triage_result": None,
         "triage_confidence": 0.0,
         "follow_up_questions": [],
+        "awaiting_user": False,
         "current_agent": "intake",
         "cycle_count": 0,
         "max_cycles": 3,

@@ -1,30 +1,35 @@
+# Exact pins: the versions the test suite and the end-to-end eval were run with
+# (Python 3.13). Upgrade deliberately and re-run `pytest` + `python -m eval.run_eval`.
+
 # ─── Core Agent Framework ───
-langgraph>=0.4.0
-langchain>=0.3.0
-langchain-core>=0.3.0
+langgraph==1.2.22
+langchain==1.5.0
+langchain-core==1.8.1
 
 # ─── LLM Providers ───
-langchain-anthropic>=0.3.0       # Claude API integration
-langchain-openai>=0.3.0          # OpenAI fallback (optional)
+langchain-anthropic==1.7.10      # Claude API integration (default provider)
+langchain-openai==1.8.0          # OpenAI, and any OpenAI-compatible endpoint (e.g. Gemini)
 
 # ─── RAG Pipeline ───
-chromadb>=0.5.0                  # Vector store
-sentence-transformers>=3.0.0     # Local embedding model (all-MiniLM-L6-v2)
+chromadb==1.5.9                  # Vector store
+sentence-transformers==6.3.0     # Local embedding model (all-MiniLM-L6-v2)
 
 # ─── PDF Processing (for guideline ingestion) ───
-pymupdf>=1.24.0                  # PDF text extraction (import as fitz)
-langchain-text-splitters>=0.3.0  # RecursiveCharacterTextSplitter
+pymupdf==2.1                     # PDF text extraction (import as fitz)
+langchain-text-splitters==1.1.3  # RecursiveCharacterTextSplitter
 
 # ─── Data Validation ───
-pydantic>=2.0.0                  # Structured schemas
+pydantic==2.12.3
 
 # ─── Frontend ───
-gradio>=5.0.0
+# 6.x removed gr.Chatbot(bubble_full_width=...) and the tuple history format;
+# app.py is verified on 5.50.0.
+gradio==5.50.0
 
 # ─── Testing ───
-pytest>=8.0.0
-pytest-asyncio>=0.24.0
+pytest==9.2.0
+pytest-asyncio==1.5.0
 
 # ─── Utilities ───
-python-dotenv>=1.0.0             # .env file for API keys
-rich>=13.0.0                     # Pretty printing for debugging
+python-dotenv==1.2.3             # .env file for API keys
+rich==15.0.0

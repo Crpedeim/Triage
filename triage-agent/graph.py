@@ -5,12 +5,12 @@ This is where the four agents are wired together into a runnable graph.
 After reading this file you should be able to answer:
   - Which node runs first?
   - How does the supervisor decide routing?
-  - Where does the human-in-the-loop interrupt happen?
+  - How does the graph wait for the user between turns?
   - How does state persist between user messages?
 
 GRAPH STRUCTURE:
   Entry point → supervisor
-  supervisor → intake | retrieval | triage | output  (conditional edges)
+  supervisor → intake | retrieval | triage | output | END  (conditional edges)
   intake     → supervisor  (unconditional)
   retrieval  → supervisor  (unconditional)
   triage     → supervisor  (unconditional)
@@ -19,21 +19,26 @@ GRAPH STRUCTURE:
   Pattern: hub-and-spoke. Every agent reports back to supervisor.
   Supervisor decides who goes next. Agents never route directly to each other.
 
-HUMAN-IN-THE-LOOP:
-  interrupt_before=["intake"] tells LangGraph to pause execution BEFORE
-  running the intake node each time. This is how we "wait for user input":
+HUMAN-IN-THE-LOOP (one graph run per user turn):
+  There is no interrupt. Each user message is one graph run on the thread's
+  checkpointed state:
 
-  1. User sends message → invoke graph with HumanMessage in state
-  2. Supervisor routes to intake
-  3. Graph PAUSES (interrupt_before fires)
-  4. Resume → intake runs → generates question → adds AIMessage to state
-  5. Supervisor routes back to intake (intake_complete=False)
-  6. Graph PAUSES again
-  7. UI reads last AIMessage (the question), shows it to user
-  8. User answers → add HumanMessage to state, resume from checkpoint
-  9. Repeat until intake_complete=True
-  10. From intake_complete=True: supervisor→retrieval→triage→output
-      (no more interrupts — these run straight through)
+  1. run_turn() invokes the graph with {"messages": [HumanMessage], "awaiting_user": False}.
+     The checkpointer merges this into the saved state for that thread_id.
+  2. supervisor → intake. Intake extracts the PatientSummary.
+  3. If more information is needed, intake appends its question (AIMessage)
+     and sets awaiting_user=True → supervisor routes to END. The run finishes
+     and run_turn() returns the question.
+  4. The next user message starts step 1 again on the saved state.
+  5. Once intake is complete the same run continues
+     supervisor → retrieval → triage → output → END.
+  6. Low-confidence feedback loop: triage → supervisor → intake (asks the
+     triage agent's follow-up question, awaiting_user=True) → END.
+
+  Earlier versions used interrupt_before=["intake"] and re-invoked with new
+  input on every turn. That restarted at the supervisor and paused before
+  intake each time, so intake never ran. A one-run-per-turn design needs no
+  resume step and never re-executes LLM calls.
 
 CHECKPOINTER:
   MemorySaver stores graph state in memory keyed by thread_id.
@@ -154,19 +159,13 @@ def create_graph(checkpointer=None):
             "retrieval": "retrieval",
             "triage":    "triage",
             "output":    "output",
+            "end":       END,      # intake asked a question; wait for the user
         },
     )
 
     # ─── Compile ─────────────────────────────────────────────────────────
-    # interrupt_before=["intake"]: pause BEFORE intake runs each time.
-    # This gives the caller a chance to read the last AI message
-    # (the question) and present it to the user before continuing.
-    app = graph.compile(
-        checkpointer=checkpointer,
-        interrupt_before=["intake"],
-    )
-
-    return app
+    # No interrupts: a run ends at END when intake is awaiting the user.
+    return graph.compile(checkpointer=checkpointer)
 
 
 def run_turn(
@@ -179,13 +178,14 @@ def run_turn(
     Process one user message and return the system's response.
 
     This is the main interface for the Gradio app and any other frontend.
-    It handles the interrupt/resume cycle transparently.
+    Each call is one graph run on the thread's checkpointed state.
 
     Args:
         app:          Compiled LangGraph app (from create_graph()).
         thread_id:    Unique session identifier. Same ID = same conversation.
         user_message: The user's text input.
-        config:       Optional LangGraph config overrides.
+        config:       Optional LangGraph config (e.g. {"callbacks": [...]}).
+                      thread_id always comes from the thread_id argument.
 
     Returns:
         {
@@ -197,25 +197,20 @@ def run_turn(
             "state":       dict,  # Full state for debugging
         }
     """
-    thread_config = {"configurable": {"thread_id": thread_id}}
-    if config:
-        thread_config.update(config)
+    thread_config: dict = dict(config or {})
+    thread_config["configurable"] = {**(thread_config.get("configurable") or {}), "thread_id": thread_id}
 
-    # ─── Check if this is a new or existing session ───────────────────────
     current_state = _get_current_state(app, thread_config)
-    is_new_session = current_state is None
+    user_input = {"messages": [HumanMessage(content=user_message)], "awaiting_user": False}
 
-    if is_new_session:
-        # New session: invoke with initial state + first message
+    if current_state is None:
+        # New session: full initial state + first message
         initial = create_initial_state()
-        initial["messages"] = [HumanMessage(content=user_message)]
+        initial.update(user_input)
         app.invoke(initial, config=thread_config)
     else:
-        # Existing session: add user message and resume from checkpoint
-        app.invoke(
-            {"messages": [HumanMessage(content=user_message)]},
-            config=thread_config,
-        )
+        # Existing session: merge the reply into the saved state and run one turn
+        app.invoke(user_input, config=thread_config)
 
     # ─── Read the updated state ───────────────────────────────────────────
     state = _get_current_state(app, thread_config)

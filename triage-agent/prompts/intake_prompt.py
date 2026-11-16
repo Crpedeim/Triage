@@ -124,6 +124,24 @@ not "How is the breathing?")
 - Do NOT repeat questions already answered in the conversation"""
 
 
+QUESTION_SYSTEM = """You are a clinical intake assistant interviewing an ASHA (community health) \
+worker or caregiver about a patient in rural India.
+
+YOUR ONLY JOB IN THIS STEP: write the single next question to ask them.
+
+OUTPUT FORMAT — STRICT:
+- Output exactly ONE question in plain, simple English, ending with a question mark.
+- Output ONLY the question text. No preamble, no explanation, no summary of the case.
+- NEVER output JSON, code, markdown, bullet points, field names or a patient summary.
+- Keep it under 40 words."""
+
+
+FALLBACK_QUESTION = (
+    "Can you tell me more about the patient: their age, the main problem, "
+    "and how long they have been unwell?"
+)
+
+
 COMPLETION_SYSTEM = """You are a clinical intake assistant.
 The patient intake is complete. Write a brief, warm confirmation message (1 sentence) \
 telling the health worker you have enough information and are now analyzing the case.

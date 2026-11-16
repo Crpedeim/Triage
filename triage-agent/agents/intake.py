@@ -9,36 +9,33 @@ Signals completion when enough information is collected.
 INPUTS FROM STATE:
   messages             — full conversation history
   follow_up_questions  — specific questions from Triage Agent (if cycling back)
-  patient_summary      — previous summary (if cycling back, may be partial)
-  cycle_count          — how many triage cycles have run
 
 OUTPUTS TO STATE:
   messages             — updated with new AI question (or completion message)
   patient_summary      — extracted and validated PatientSummary
-  intake_complete      — True when completeness_score >= threshold
+  intake_complete      — True when enough information is collected
+  awaiting_user        — True when a question was asked (the run ends and
+                         waits for the user's reply)
+  follow_up_questions  — remaining queued follow-up questions
 
 FLOW INSIDE THE AGENT:
   1. Extract PatientSummary from conversation (structured LLM call)
-  2. Check if complete (completeness_score >= COMPLETENESS_THRESHOLD)
-  3a. If complete → write completion message, set intake_complete=True
-  3b. If not complete → generate next question, add to messages
+  2. If triage queued follow-up questions, ask the next one (even if the
+     summary already looks complete — triage asked for it specifically)
+  3. Else if complete → completion message, intake_complete=True
+  4. Else → generate the next question with QUESTION_SYSTEM (never the
+     extraction prompt) and validate it is a plain question
 
 WHY TWO LLM CALLS:
   Call 1 uses structured output to extract the PatientSummary schema.
-  Call 2 generates the next natural-language question.
-  Combining them into one call would require a complex output schema and
-  the extraction quality drops — structured tasks and generation tasks
-  work better separately.
-
-HUMAN-IN-THE-LOOP NOTE:
-  When the agent generates a question (step 3b), it adds an AIMessage to
-  the conversation and returns. LangGraph will INTERRUPT the graph here,
-  waiting for the user's next HumanMessage. When the user responds, the
-  graph resumes and routes back to this agent, which re-runs from step 1
-  with the updated conversation.
+  Call 2 generates the next natural-language question with its own prompt.
+  Reusing the extraction prompt for call 2 once produced a JSON patient summary
+  that was shown to the user as if it were a question.
 """
 
 from __future__ import annotations
+
+import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -46,84 +43,98 @@ from llm import get_fast_llm
 from prompts.intake_prompt import (
     COMPLETION_SYSTEM,
     EXTRACTION_SYSTEM,
+    FALLBACK_QUESTION,
+    QUESTION_SYSTEM,
     question_prompt,
 )
-from state import COMPLETENESS_THRESHOLD, PatientSummary, TriageState
+from state import PatientSummary, TriageState
 
 
 def intake_agent(state: TriageState) -> dict:
     """
     Intake Agent node function for LangGraph.
 
-    Takes the current graph state, runs the intake logic, and returns
-    a partial state update dict. LangGraph merges this into the full state.
-
-    Returns dict with keys: messages, patient_summary, intake_complete
+    Returns a partial state update (see module docstring).
     """
     messages = state["messages"]
-    follow_up_questions = state.get("follow_up_questions", [])
-    cycle_count = state.get("cycle_count", 0)
+    follow_up_questions = list(state.get("follow_up_questions") or [])
 
     llm = get_fast_llm()
 
     # ─── Step 1: Extract PatientSummary from conversation ─────────────────
-    # Use structured output so we always get a valid Pydantic model back.
-    # The LLM reads the full conversation and extracts what it knows.
-    # On first call with no messages, returns a near-empty summary.
-
     extraction_messages = [SystemMessage(content=EXTRACTION_SYSTEM)] + list(messages)
     structured_llm = llm.with_structured_output(PatientSummary)
 
     try:
         summary: PatientSummary = structured_llm.invoke(extraction_messages)
     except Exception:
-        # Fallback: if structured output fails (rare), use empty summary
         summary = PatientSummary(
             chief_complaint=_extract_chief_complaint_fallback(messages),
             completeness_score=0.1,
         )
 
-    # ─── Step 2: Check completeness ───────────────────────────────────────
-    if summary.is_complete:
-        # Intake is done — write a brief confirmation and signal completion
+    # ─── Step 2/3: Complete only if no follow-up questions are pending ────
+    if summary.is_complete and not follow_up_questions:
         completion_response = llm.invoke([
             SystemMessage(content=COMPLETION_SYSTEM),
             HumanMessage(content=f"Patient summary: {summary.chief_complaint}. "
                                   f"Completeness: {summary.completeness_score:.0%}"),
         ])
-        completion_msg = AIMessage(content=completion_response.content)
         return {
-            "messages": [completion_msg],
+            "messages": [AIMessage(content=_text(completion_response.content))],
             "patient_summary": summary,
             "intake_complete": True,
+            "awaiting_user": False,
         }
 
-    # ─── Step 3: Generate the next question ───────────────────────────────
-    # Build the question prompt based on what's missing
+    # ─── Step 4: Generate the next question ───────────────────────────────
     prompt_text = question_prompt(
         summary=summary,
         follow_up_questions=follow_up_questions,
         conversation_length=len(messages),
     )
-
     question_response = llm.invoke([
-        SystemMessage(content=EXTRACTION_SYSTEM),
+        SystemMessage(content=QUESTION_SYSTEM),
         *list(messages),
         HumanMessage(content=prompt_text),
     ])
 
-    question_msg = AIMessage(content=question_response.content)
-
-    # If we consumed a follow-up question from the Triage Agent, remove it
-    # from the queue so we don't ask the same question twice
-    remaining_follow_ups = follow_up_questions[1:] if follow_up_questions else []
+    default = follow_up_questions[0] if follow_up_questions else FALLBACK_QUESTION
+    question = clean_question(_text(question_response.content), default=default)
 
     return {
-        "messages": [question_msg],
+        "messages": [AIMessage(content=question)],
         "patient_summary": summary,
         "intake_complete": False,
-        "follow_up_questions": remaining_follow_ups,
+        "awaiting_user": True,
+        # Consume the follow-up question we just asked
+        "follow_up_questions": follow_up_questions[1:],
     }
+
+
+# Code fences, a leading JSON object/array, or a JSON key ("name": ...)
+_STRUCTURED_OUTPUT_RE = re.compile(r"```|^\s*[\{\[]|\"[A-Za-z_][\w ]*\"\s*:", re.MULTILINE)
+
+
+def clean_question(text: str, default: str = FALLBACK_QUESTION) -> str:
+    """
+    Return text if it reads as a plain-language question for the user.
+
+    Falls back to `default` when the model returned nothing, or something that
+    looks like JSON / code / a field dump instead of a question.
+    """
+    t = (text or "").strip()
+    if not t or _STRUCTURED_OUTPUT_RE.search(t):
+        return default
+    return t
+
+
+def _text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(b.get("text", "") for b in content if isinstance(b, dict)).strip()
+    return str(content)
 
 
 def _extract_chief_complaint_fallback(messages: list) -> str:
