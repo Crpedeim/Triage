@@ -4,12 +4,21 @@ Everything here was either read from the code or produced by a command run on
 2026-11-16 (Python 3.13.18, 4-CPU Linux container). Anything that was not
 measured is marked **NOT MEASURED**.
 
-> **Key caveat:** no LLM API key was available, so **no real LLM call was made**.
-> Every LLM-dependent number (triage latency, tokens, cost, accuracy) is
-> **NOT MEASURED**. LLM-free parts (embeddings, vector search, graph wiring,
-> safety override, output card, Gradio launch) were run for real. Where an
-> agent's LLM was swapped for a scripted stub to exercise the graph, that is
-> stated.
+> **Which LLM was measured:** the code's default provider is Anthropic
+> (`claude-sonnet-4-5` / `claude-haiku-4-5-20251001`), but no Anthropic key
+> was available. Real LLM runs used **Google Gemini**, reached **with no code
+> changes** through the project's existing `openai` provider pointed at
+> Google's OpenAI-compatible endpoint:
+>
+> ```
+> LLM_PROVIDER=openai
+> OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+> MODEL_NAME=gemini-3.1-pro-preview      # main model -> Triage Agent
+> FAST_MODEL_NAME=gemini-3.8-flash       # fast model -> Intake, Retrieval, relevance judge
+> ```
+>
+> Every LLM number below is for that Gemini configuration. **The default
+> Claude configuration was NOT MEASURED.**
 
 ---
 
@@ -66,7 +75,8 @@ and 0.05 if guidelines were cited, and subtracts 0.2 if completeness is below
   `openai`, `groq`, `together` and `ollama`, chosen by the `LLM_PROVIDER` env
   var. Default models: main `claude-sonnet-4-5` (Triage), fast
   `claude-haiku-4-5-20251001` (Intake, Retrieval query generation, relevance
-  judge). Temperature 0.0, `max_tokens=4096` for Anthropic.
+  judge). Temperature 0.0. Overridable with `MODEL_NAME` / `FAST_MODEL_NAME`.
+  Measured here on Gemini through the `openai` provider (see top).
 - **Data models:** Pydantic v2: `Symptom`, `VitalSigns`, `PatientSummary`, `SuspectedCondition`, `TriageResult`. Graph state is the `TriageState` TypedDict, with an `add_messages` reducer.
 - **RAG:** ChromaDB `PersistentClient`, cosine space, one collection
   `clinical_guidelines`. Embeddings come from sentence-transformers
@@ -79,92 +89,157 @@ and 0.05 if guidelines were cited, and subtracts 0.2 if completeness is below
 
 ## 4. Measured numbers
 
-### Test suite
+### 4.1 Test suite
 - **Command:** `cd triage-agent && python -m pytest -q`
 - **Result:** **151 passed, 1 skipped, 0 failed, out of 152 collected.** Of the tests that ran, 151/151 passed.
   - Per file (from `--collect-only`): `test_state` 41, `test_rag` 43, `test_agents` 38, `test_graph` 30.
   - The one skip is `tests/test_rag.py:591`, "No API key available for LLM instantiation test".
 - Run twice: with real MiniLM embeddings (22.82 s) and with
   `USE_MOCK_EMBEDDINGS=1` hash embeddings (3.81 s). Both gave 151 passed, 1 skipped.
-- **Every LLM call in the suite is mocked** (`@patch("agents.*.get_llm" / "get_fast_llm")`).
-  The `run_turn()` tests use a mocked app, not the compiled graph.
+- **Every LLM call in the suite is mocked.** The `run_turn()` tests use a mocked app, not the compiled graph.
 
-### Ingestion
-- `python -m rag.ingest --sample` stored **8 chunks**: 6 IMNCI (`sample_imnci.txt`) and 2 WHO PEN (`sample_who_pen.txt`).
-- The repo contains **no guideline PDFs** (`rag/guidelines/` does not exist), so these 8 sample chunks are the whole knowledge base.
+### 4.2 Ingestion
+- `python -m rag.ingest --sample` stored **8 chunks**: 6 IMNCI and 2 WHO PEN.
+  The repo contains **no guideline PDFs**, so these 8 sample chunks are the whole knowledge base.
 
-### Retrieval latency (real MiniLM + Chroma, no LLM)
-Measured by timing `multi_query_search()` 20 times per case on the 4
-example inputs in `app.py`. Queries came from the project's rule-based
-`_fallback_queries()`, using hand-filled `PatientSummary` objects. Median
-wall time on a 4-CPU container:
+### 4.3 End-to-end Gemini run: 6 cases
+**How it was run:**
+- The real compiled graph from `create_graph()` was used unchanged. It was
+  driven by resuming past the interrupt (`update_state` with the caregiver's
+  reply, then `invoke(None)`), because `run_turn()` does not work (see §6.1).
+- A **simulated caregiver** (a separate `gemini-3.8-flash` call, not part of
+  the system) answered each intake question from a hidden patient vignette.
+  Its time and tokens are **excluded** from all system figures below.
+- A LangChain callback recorded every system LLM call's model, latency and token usage.
+- One run per case, run sequentially.
 
-| Case | Filter | # queries | Median latency | Top retrieved section (cosine distance) |
-|---|---|---|---|---|
-| 3 yo, cough 4 d, fast breathing | imnci | 4 | 67.1 ms | ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING (0.251) |
-| 4 yo, mild cough | imnci | 3 | 48.0 ms | GENERAL DANGER SIGNS (0.386) |
-| 2 yo, diarrhoea 3 d | imnci | 3 | 46.5 ms | GENERAL DANGER SIGNS (0.386), then ASSESS AND CLASSIFY DIARRHOEA (0.389) |
-| 55 yo, headache, BP 160/100 | who_pen | 4 | 59.4 ms | CARDIOVASCULAR RISK MANAGEMENT (0.422) |
+**Labels.** I wrote the 6 vignettes. Each expected level comes from the
+project's own sample guideline text plus the level mapping in `state.py`
+(IMNCI pink → emergency, yellow → urgent, green → self_care). This is a
+small, self-made sanity set, **not a validated clinical benchmark**.
 
-### LLM calls per triage (counted, not timed)
-With a stub LLM recording each call through the real compiled graph, a case
-where intake finishes on its first pass and retrieval passes on its first
-attempt made **5 LLM calls**:
-1. Intake extraction
-2. Intake completion message
-3. Retrieval query generation
-4. Relevance judge
-5. Triage structured output
+| Case | Expected (basis) | Predicted | Match | Intake Qs | LLM calls | System wall time | System tokens |
+|---|---|---|---|---|---|---|---|
+| A: 3 yo, cough, RR 50, chest indrawing | emergency (severe pneumonia) | **standard** | ✗ | 2 | 9 | 98.48 s | 13,499 |
+| B: 3 yo, cough, RR 46, no danger signs | urgent (pneumonia, yellow) | **standard** | ✗ | 2 | 9 | 67.91 s | 12,953 |
+| C: 4 yo, mild cough, RR 28 | self_care (cough or cold) | self_care | ✓ | 1 | 7 | 51.34 s | 10,260 |
+| D: 2 yo, diarrhoea, lethargic, sunken eyes, drinks poorly | emergency (severe dehydration) | emergency | ✓ | 2 | 9 | 64.75 s | 12,566 |
+| E: 18 mo, fever, 2 convulsions today | emergency (very severe febrile disease) | emergency | ✓ | 3 | 11 | 90.51 s | 17,439 |
+| F: 55 yo, headache, BP 160/100, no emergency features | standard (WHO PEN grade 2, refer within 24–48 h) | standard | ✓ | 1 | 7 | 57.87 s | 10,209 |
 
-From the code, each extra interview turn adds 2 intake calls, and each extra
-retrieval attempt adds 2 more calls (at most 3 attempts).
+**Accuracy on these 6 labelled cases: 4/6 exact match.** It is still 4/6
+even if `urgent` is accepted for the danger-sign cases. Both misses were
+**under-triage** to `standard`.
 
-### NOT MEASURED
-- **End-to-end latency per triage with a real LLM:** NOT MEASURED (no API key).
-- **Tokens and cost per run:** NOT MEASURED (no API key; the code does not log usage).
-- **Triage accuracy:** NOT MEASURED. The repo has **no labelled evaluation set**, and no real LLM was run.
-- **Retrieval accuracy (precision/recall):** NOT MEASURED. No labelled relevance data exists; the table above shows observed rankings only.
+**Latency per triage** (system wall time per case, caregiver excluded): min
+**51.34 s**, median **66.33 s**, mean **71.81 s**, max **98.48 s** (n = 6).
+Almost all of it is LLM response time:
+- Per node: intake median 14.14 s (n = 17), retrieval median 12.93 s (n = 6), triage median 12.14 s (n = 6).
+- Per call: `gemini-3.1-pro-preview` median 12.14 s (6 calls); `gemini-3.8-flash` median 6.54 s (46 calls, range 3.74–23.22 s).
+- Non-LLM pieces: vector search took 46–67 ms per case (median of 20 runs,
+  §4.4), and the one-time cold load of the embedding model took 5.5 s.
+- An earlier trial of case A took 159.6 s and then 113.6 s, so latency varies run to run.
 
-## 5. What was verified to work, and what wasn't
+**Tokens per triage** (from the API's usage fields): min **10,209**, median
+**12,760**, max **17,439**; 76,926 in total across the 6 cases. Gemini's
+`total_tokens` was larger than input + output on every call. I recorded the
+difference as reasoning ("thinking") tokens; that label is my inference, the
+API did not name it.
 
-Verified by running it:
+| Case | Pro: input / output / reasoning | Flash: input / output / reasoning |
+|---|---|---|
+| A | 2307 / 728 / 663 | 4036 / 1004 / 4761 |
+| B | 2308 / 717 / 1119 | 3989 / 888 / 3932 |
+| C | 2281 / 666 / 597 | 2807 / 477 / 3432 |
+| D | 2343 / 762 / 643 | 4024 / 923 / 3871 |
+| E | 2107 / 841 / 664 | 5540 / 1067 / 7220 |
+| F | 1464 / 940 / 1806 | 2465 / 540 / 2994 |
+
+**Cost per run: only partly computed.**
+- **Pro model (Triage Agent):** using $2 input / $12 output per 1M tokens for
+  `gemini-3.1-pro-preview` (prompts ≤200k). I took that price from search
+  results quoting Google's pricing page; I could not open the page itself.
+  The cost is **$0.0126–$0.0143 per run** if reasoning tokens are not billed,
+  or **$0.0197–$0.0359 per run** if they are billed at the output rate. The
+  medians are $0.0136 and $0.0219.
+- **Flash model:** NOT MEASURED. I found no published price for `gemini-3.8-flash`.
+- **Total cost per run: NOT MEASURED.**
+
+**Loops observed in these runs:**
+- Retrieval passed on the first attempt in all 6 cases: one query-generation
+  call and one judge call each. The call counts equal 2 × (intake turns) + 3
+  in every case. The reformulation loop was therefore never triggered.
+- Triage confidence was 1.0 in all 6 cases, so the Triage → Intake feedback
+  loop was never triggered by a real LLM.
+- The red-flag override did not fire. In D and E the LLM itself chose
+  `emergency` (red flags: `lethargic` and `altered consciousness` in D,
+  `convulsions` in E). In A, no red flag was extracted.
+
+### 4.4 Retrieval latency (real MiniLM + Chroma, no LLM)
+I timed `multi_query_search()` 20 times per case on `app.py`'s 4 example
+inputs, using queries from the project's rule-based `_fallback_queries()`.
+
+| Case | Filter | Median latency | Top section (cosine distance) |
+|---|---|---|---|
+| 3 yo, cough, fast breathing | imnci | 67.1 ms | ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING (0.251) |
+| 4 yo, mild cough | imnci | 48.0 ms | GENERAL DANGER SIGNS (0.386) |
+| 2 yo, diarrhoea | imnci | 46.5 ms | GENERAL DANGER SIGNS (0.386), then DIARRHOEA (0.389) |
+| 55 yo, BP 160/100 | who_pen | 59.4 ms | CARDIOVASCULAR RISK MANAGEMENT (0.422) |
+
+### 4.5 NOT MEASURED
+- Anything for the default Claude configuration (latency, tokens, cost, accuracy).
+- Total cost per run (the flash-model price is unknown).
+- Retrieval precision/recall (no labelled relevance data).
+- Accuracy on any validated or external clinical dataset (the repo has none; §4.3 uses 6 vignettes I wrote).
+- Variance across repeated runs of the same case (each case was run once in the final run).
+
+## 5. Verified working
+
 - The Gradio app **launches and serves HTTP 200** on port 7860 with **Gradio 5.50.0**.
-- The graph compiles. When driven past the interrupt with `app.invoke(None, cfg)` (stub LLM, real retrieval), it goes supervisor → intake → retrieval → triage → output and reaches `phase="done"`.
-- The red-flag override works. A stub `standard` result with `red_flags=["chest indrawing"]` came out as **`urgent`**, with the referral note and the prepended "URGENT: Refer…" action. Confidence was 1.0 (0.8 + 0.15 + 0.05).
-- Low confidence (forced to 0.3) routes back to intake with `cycle_count=1`.
+- All 6 Gemini cases ran supervisor → intake → retrieval → triage → output and reached `phase="done"` with **0 LLM errors**.
+- Structured output (`PatientSummary`, `TriageResult`) parsed with no errors on both Gemini models.
+- A stub-LLM run confirmed that the red-flag override escalates `standard` to
+  `urgent` and adds a referral note, and that low confidence (0.3) routes back
+  to intake.
 
 ## 6. Limitations (each one observed in a run or read in the code)
 
 1. **The multi-turn chat flow does not reach the intake agent.** `run_turn()`
    (used by `app.py`) calls `app.invoke({...new message...})` on every turn.
    With `interrupt_before=["intake"]`, each call restarts at the supervisor and
-   pauses before intake. Over 3 turns through `run_turn()` on the real compiled
-   graph, **the LLM was called 0 times**, and every reply was the fallback
-   string "I'm ready to help. Please describe the patient's condition." The
-   pipeline only progressed when resumed manually with `invoke(None)`.
-2. **The feedback loop never re-runs triage.** After looping back to intake,
-   `route_next` keeps returning `"intake"`: case 5 matches before case 6, and
-   the supervisor only increments `cycle_count` when the phase is `triage`. In
-   the run, 5 more resumes made only intake calls; triage was never called
-   again and `cycle_count` stayed at 1.
-3. **`app.py` crashes on Gradio 6.x.** `requirements.txt` says `gradio>=5.0.0`,
-   which installed 6.32.0. On that version,
-   `gr.Chatbot(bubble_full_width=...)` raises `TypeError`. The app works on
-   Gradio 5.50.0, which also emits deprecation warnings for the tuple chat
-   format.
-4. **Tiny knowledge base.** Only 8 built-in sample chunks; no real IMNCI or WHO PEN PDFs are included.
-5. **Red flags depend entirely on LLM extraction.** `RED_FLAG_KEYWORDS` and
-   `RESPIRATORY_RATE_THRESHOLDS` are defined in `state.py` but not used by any
-   non-test code. The override only escalates to `urgent`, never to `emergency`.
-6. **The triage prompt asks for `follow_up_questions`, but `TriageResult` has
-   no such field.** Follow-up questions are actually generated by Python rules
-   (`_extract_follow_up_questions`).
-7. **Declared but not implemented:** `Phase.CONSULTATION` and
-   `has_diagnostic_ambiguity()` ("Enhancement 3") exist, but the graph has no
-   consultation node.
-8. **No usage or latency logging**, so cost and latency can't be read from the app itself.
-9. **Unit tests mock every LLM call** and test `run_turn()` against a mocked
-   app. That is why limitations 1 and 2 are not caught (151/151 of the tests
-   that ran passed).
-10. In-memory `MemorySaver` only; sessions are lost on restart.
-11. The project describes itself as a prototype, not a medical device.
+   pauses before intake. Over 3 turns through `run_turn()`, the LLM was called
+   **0 times**, and every reply was the fallback string "I'm ready to help.
+   Please describe the patient's condition."
+2. **Under-triage of a danger sign (case A).** Intake marked the interview
+   complete (completeness 0.8) after asking only about breathing rate,
+   drinking and alertness. It never asked about chest indrawing, so no red
+   flag was recorded, the override could not fire, and a severe-pneumonia
+   case was classified `standard` with confidence 1.0. Case B (pneumonia) was
+   also classified `standard` against an expected `urgent`.
+3. **Confidence saturates at 1.0.** In all 6 Gemini cases the top condition
+   came back at 0.95 and citing guidelines adds 0.05. So confidence was 1.0
+   even for the wrong answers, and the feedback loop never ran.
+4. **The feedback loop never re-runs triage** (stub-LLM run). After looping
+   back to intake, `route_next` keeps returning `"intake"`: case 5 matches
+   before case 6. Over 5 more resumes, triage was never called again.
+5. **Intake leaked raw JSON to the user (case E).** One "question" shown to
+   the caregiver was a JSON block of the patient summary, not a question. The
+   question call reuses `EXTRACTION_SYSTEM` as its system prompt
+   (`agents/intake.py`).
+6. **`app.py` crashes on Gradio 6.x.** `requirements.txt` says `gradio>=5.0.0`,
+   which installed 6.32.0, where `gr.Chatbot(bubble_full_width=...)` raises
+   `TypeError`. The app works on 5.50.0, with deprecation warnings.
+7. **Tiny knowledge base.** Only 8 built-in sample chunks; no real IMNCI or WHO PEN PDFs are included.
+8. **Red flags depend entirely on LLM extraction.** `RED_FLAG_KEYWORDS` and
+   `RESPIRATORY_RATE_THRESHOLDS` in `state.py` are not used by any non-test
+   code. The override only escalates to `urgent`, never to `emergency`.
+9. **The triage prompt asks for `follow_up_questions`, but `TriageResult` has
+   no such field.** Follow-up questions actually come from Python rules.
+10. **Declared but not implemented:** `Phase.CONSULTATION` and `has_diagnostic_ambiguity()` ("Enhancement 3"); the graph has no consultation node.
+11. **Slow per triage:** a median of 66 s across 6 Gemini runs, almost all of it sequential LLM calls (7–11 per case).
+12. **No usage or latency logging** in the app; the figures above came from an external callback.
+13. **Unit tests mock every LLM call** and test `run_turn()` against a mocked app, which is why limitations 1 and 4 are not caught.
+14. **LangGraph warns** that deserializing the project's types
+    (`PatientSummary`, `TriageResult`, enums) from checkpoints "will be blocked
+    in a future version".
+15. In-memory `MemorySaver` only; sessions are lost on restart. The project describes itself as a prototype, not a medical device.
