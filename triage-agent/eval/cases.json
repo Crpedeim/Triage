@@ -1,0 +1,71 @@
+[
+ {
+  "id": "A_severe_pneumonia",
+  "expected": "emergency",
+  "acceptable": [
+   "emergency",
+   "urgent"
+  ],
+  "basis": "IMNCI sample: chest indrawing => SEVERE PNEUMONIA OR VERY SEVERE DISEASE, refer URGENTLY to hospital (pink)",
+  "opening": "My 3 year old has had a cough for 4 days and seems to be breathing fast.",
+  "vignette": "Boy, 3 years old. Cough for 4 days. Counted 50 breaths per minute. Lower chest pulls in when he breathes in. Mild fever since yesterday. Still drinking, eating less. No convulsions, not vomiting everything, alert, no stridor. No medicines, no past illnesses.",
+  "set": "baseline6"
+ },
+ {
+  "id": "B_pneumonia_fast_breathing",
+  "expected": "urgent",
+  "acceptable": [
+   "urgent"
+  ],
+  "basis": "IMNCI sample: fast breathing (>=40/min age 1-5y) without danger signs => PNEUMONIA (yellow; state.py maps yellow to urgent)",
+  "opening": "My daughter is 3 and has had a cough for 3 days, she is breathing a bit quickly.",
+  "vignette": "Girl, 3 years old. Cough for 3 days. Counted 46 breaths per minute while calm. No chest indrawing, no stridor. Low fever. Drinking and eating normally. No convulsions, not vomiting, alert and playful. No medicines, no past illnesses.",
+  "set": "baseline6"
+ },
+ {
+  "id": "C_cough_or_cold",
+  "expected": "self_care",
+  "acceptable": [
+   "self_care"
+  ],
+  "basis": "IMNCI sample: no signs of pneumonia or very severe disease => NO PNEUMONIA: COUGH OR COLD (green)",
+  "opening": "4 year old girl, mild cough for 2 days, no fever, eating fine.",
+  "vignette": "Girl, 4 years old. Mild cough and runny nose for 2 days. Counted 28 breaths per minute. No chest indrawing, no stridor. No fever. Eating and drinking normally. No convulsions, no vomiting, active and alert. No medicines, no past illnesses.",
+  "set": "baseline6"
+ },
+ {
+  "id": "D_severe_dehydration",
+  "expected": "emergency",
+  "acceptable": [
+   "emergency",
+   "urgent"
+  ],
+  "basis": "IMNCI sample: >=2 of lethargic, sunken eyes, drinking poorly, slow skin pinch => SEVERE DEHYDRATION, refer URGENTLY (pink)",
+  "opening": "2 year old boy, diarrhea for 3 days, not sure if he can drink.",
+  "vignette": "Boy, 2 years old. Watery diarrhoea for 3 days, many times a day, no blood. Very sleepy and hard to wake. Eyes look sunken. Drinks very poorly when offered. Skin pinch on belly goes back very slowly. No convulsions. No cough. No medicines, no past illnesses.",
+  "set": "baseline6"
+ },
+ {
+  "id": "E_convulsions",
+  "expected": "emergency",
+  "acceptable": [
+   "emergency",
+   "urgent"
+  ],
+  "basis": "IMNCI sample: more than one convulsion in this illness = general danger sign; fever + danger sign => VERY SEVERE FEBRILE DISEASE, refer URGENTLY (pink)",
+  "opening": "My 18 month old has a high fever and had two fits today.",
+  "vignette": "Girl, 18 months old. High fever for 2 days. Had two convulsions (fits) today, each about 2 minutes. Now drowsy. Able to drink a little. No vomiting everything. No cough, no diarrhoea. No stiff neck noticed. No medicines, no past illnesses.",
+  "set": "baseline6"
+ },
+ {
+  "id": "F_adult_hypertension_grade2",
+  "expected": "standard",
+  "acceptable": [
+   "standard"
+  ],
+  "basis": "WHO PEN sample: BP 160/100 = Grade 2 without emergency features => refer to physician within 24-48 hours",
+  "opening": "55 year old man, headache for one week, measured blood pressure 160/100.",
+  "vignette": "Man, 55 years old. Dull headache for one week. Blood pressure measured 160/100 mmHg today and 158/98 two days ago. No chest pain, no vision problems, no weakness or numbness, no confusion, no seizures. Not on any medicines. No known diabetes.",
+  "set": "baseline6"
+ }
+]
