@@ -1,7 +1,8 @@
 # RESUME_FACTS — TriageAI (`triage-agent/`)
 
 Only facts verified from the code or from commands that were run (2026-11-16 to
-2026-11-17, Python 3.13.18, 4-CPU Linux container). Every number traces to a
+2026-11-17; Phases 0–7 on Python 3.13.18 in a 4-CPU Linux container; Round 2
+on a Windows laptop with Python 3.14.0 and on Google Cloud Run). Every number traces to a
 committed result file under `triage-agent/eval/results/` or to an entry in
 [`PHASES.md`](PHASES.md), which records how each was measured. Anything not
 measured says **NOT MEASURED**.
@@ -82,13 +83,19 @@ graph run** on the session's checkpointed state.
   ollama, and **vertexai** (Gemini on Vertex AI with Application Default
   Credentials).
 - **RAG:** ChromaDB 1.5.9 (cosine), sentence-transformers 6.3.0
-  `all-MiniLM-L6-v2` (384-dim), PyMuPDF ingestion.
+  `all-MiniLM-L6-v2` (384-dim). Knowledge base: **874 chunks from 3 WHO
+  documents** (IMCI chart booklet 2014, IMCI handbook 2005, WHO PEN 2020),
+  built at image build time with table-aware PyMuPDF 2.1 extraction
+  (glyph-font repair, IMCI classification rows as sign → classification →
+  treatment, `find_tables` rows, quality gate).
 - **UI:** Gradio 5.50.0, with the session id held in the browser
   (`gr.BrowserState`).
 - **Tracing:** one trace per turn, `POST /api/v1/traces`, with spans per
   agent and per LLM call (stdlib HTTP, background sender).
 - **Container:** `python:3.13-slim` with CPU torch 2.15.0.
-- **Deployment target:** Cloud Run (script provided; **not deployed**).
+- **Deployment:** **live on Cloud Run** (§5): max 2 instances, session
+  affinity, scale to zero, sessions in Neon Postgres, per-session / per-IP
+  rate limits (`ratelimit.py`), secrets in Secret Manager.
 - **Optional:** Google ADK 2.0.0 ReAct retrieval agent with a custom
   `BaseLlm` adapter (`requirements-adk.txt`).
 - **Tests:** pytest 9.2.0.
@@ -197,23 +204,65 @@ hypertension cases F and W flip between standard and urgent across runs.
   took 14,955.5 ms, used 4,666 tokens and cost $0.031092. The trace total
   cost was `null`, because flash is unpriced.
 
+### 4.8 Round 2: real WHO guidelines, persistence, public deployment
+"Before" is the end of Phase 7 (`main` at `e6230ed`); "after" is Round 2
+(`claude/who-guidelines-hardening`). Details: `PHASES.md`, R2 Phases 0–5.
+
+| Metric | Before | After |
+|---|---|---|
+| Knowledge base: documents | 0 (8 hand-written excerpts) | **3 WHO documents** |
+| Knowledge base: pages | 0 | **338 pages: 248 used, 0 replaced by curated excerpts, 90 skipped** (front matter, forms, charts, 2 garbled) |
+| Knowledge base: chunks | 8 (6 IMNCI, 2 WHO PEN) | **874** (788 IMCI, 86 WHO PEN); 900/120 characters; 8 of 874 over the embedding model's 256 tokens |
+| Extraction quality (20 random chunks per document) | — | 0/60 garbled in the final sample (first pass: 6/60, all fixed) |
+| Accuracy (31 cases) | 29/31 | **30/31** |
+| **Under-triage** | **0/31** | **0/31** |
+| Over-triage | 2/31 (F, X) | 1/31 (X) |
+| Latency per triage, median / p95 | 39.92 / 49.08 s | 43.74 / 71.24 s |
+| Completing turn, median / p95 | 22.77 / 38.29 s | 24.40 / 60.74 s |
+| Tokens per triage, median (p95) | 11,189 (13,729) | 12,262 (20,529) |
+| LLM calls per triage, median | 5 | 5 |
+| Priced cost per triage, median (triage model only) | $0.0135–$0.0219 | $0.0149–$0.0240 |
+| Total cost per triage | NOT MEASURED | NOT MEASURED |
+| Failed triage LLM call → result | STANDARD, safety floor skipped | at least URGENT; floor applied (danger signs → EMERGENCY) |
+| Image build on Cloud Build | fails ("--mount option requires BuildKit") | builds (`deploy/cloudbuild.yaml`) |
+| Cloud Run cold start (start → startup probe), 3 deploys each | 47.68 s median (35.50–52.17) | 45.36 s median (36.28–50.31); no measurable difference |
+| Cold start on the live public URL after scale to zero | NOT MEASURED (not deployed) | 50.35 s first request; 49.40 s instance start → probe |
+| Live per-turn latency (8 turns, 3 cases) | NOT MEASURED | median 12.97 s (4.97–28.32 s) |
+| Live cases | NOT MEASURED | 3/3 correct (A EMERGENCY, B URGENT, C SELF CARE) |
+| Session survives scale to zero | NOT MEASURED on Cloud Run | yes: 4/4 messages restored on a new instance, conversation completed |
+| One conversation across instances | NOT MEASURED on Cloud Run | yes: turns on 2 and on 3 different instances, 6/6 messages restored |
+| "Deserializing unregistered type" warnings | 0 with the allowlist (2 with LangGraph's default serializer) | 0; new test guards the allowlist |
+| Rate limits | none | 7/7 live checks passed, including a spoofed `X-Forwarded-For` |
+| Tests | 228 passed, 4 skipped without Postgres (Phase 7, Linux container) | 262 passed, 4 skipped, 1 failed on the Windows laptop without Postgres (the failure, a `test_tracing` platform-down test, also fails on untouched `main` there); `test_postgres_checkpoint.py` against Neon: 5 passed |
+
 ## 5. What is deployed where
-- **Nothing is deployed.** There is **no live URL**. The build environment
-  had no Google Cloud credentials.
-- **Ready for you to run:**
-  - `triage-agent/Dockerfile` (built and run locally, §4.6)
-  - `triage-agent/deploy/deploy_cloud_run.sh` and `deploy/CLOUD_RUN.md`:
-    Cloud Build → Cloud Run, Gemini via Vertex AI, optional Cloud SQL
-    Postgres, tracing and Secret Manager
-- **Not run against Google Cloud:** the deploy script and the Vertex AI
-  code path. Vertex is covered by 4 offline unit tests only, and no Vertex
-  call has been made.
+- **Live URL:** https://triage-ai-827630707333.us-central1.run.app
+  - Cloud Run service `triage-ai`, project `gen-lang-client-0005933941`,
+    region `us-central1`, revision `triage-ai-00004-bg2`, image
+    `us-central1-docker.pkg.dev/gen-lang-client-0005933941/triage/triage-ai:f23f447`.
+  - Public (`allUsers`); max 2 instances, min 0; session affinity; 1 vCPU,
+    2 GiB, CPU boost, 300 s timeout; runtime service account `triage-ai-run`.
+  - LLM: Gemini through the OpenAI-compatible endpoint
+    (`gemini-3.1-pro-preview`, `gemini-3.8-flash`), key in Secret Manager.
+- **Sessions:** Neon Postgres (PostgreSQL 18.7, AWS us-east-1), direct
+  connection string in secret `triage-checkpoint-db-url`;
+  `BROWSER_STATE_SECRET` in `triage-browser-state-secret`.
+- **Also in the project:** `triage-ai-bench` (private, min 0 / max 1),
+  used for the cold-start and multi-instance tests; it costs nothing while
+  idle. Artifact Registry repo `triage`.
+- **Deploy:** `triage-agent/deploy/deploy_cloud_run.sh` (ran end to end) and
+  `deploy/CLOUD_RUN.md`. Checks: `deploy/coldstart_from_logs.py`,
+  `deploy/multiinstance_check.py`, `deploy/ratelimit_check.py`,
+  `deploy/live_cases.py`.
+- **Not run against Google Cloud:** the Vertex AI code path (4 offline unit
+  tests only).
 - **Not connected:** the tracing client has only been tested against a
   local mock server, because the platform's URL and schema weren't
   available. The payload field names are an assumed shape, documented in
   `tracing.py`.
-- **Code:** branch `claude/adoring-goldberg-d2ncfb`, one commit per phase,
-  with measurements in `PHASES.md`.
+- **Code:** `main` holds Phases 0–7; Round 2 is on branch
+  `claude/who-guidelines-hardening`, one or more commits per phase, with
+  measurements in `PHASES.md`.
 
 ## 6. Remaining limitations
 1. **The evaluation is self-written and small** (31 vignettes, one run per
@@ -223,16 +272,32 @@ hypertension cases F and W flip between standard and urgent across runs.
 2. **Over-triage of hypertension.** Grade-2/3 hypertension without emergency
    features is labelled `standard`, and the LLM calls it `urgent` in 2–3 of
    the 4 standard cases depending on the run.
-3. **Tiny knowledge base:** 8 sample chunks (6 IMNCI, 2 WHO PEN) and no
-   real guideline PDFs. Adult chest pain and stroke have no guideline chunk;
-   they are handled only by the red-flag rules.
+3. **Knowledge-base gaps and licences.** WHO PEN 2020 has no section on
+   acute chest pain, stroke or hypertensive crisis. Those cases rely on the
+   red-flag rules, and the relevance judge's rejections add retrieval rounds
+   (V, Y, Z: 70–93 s per case). Young-infant (under 2 months) chunks are
+   tagged `imnci` like the 2–59-month charts, so an under-5 search can
+   return them. Both IMCI documents are "all rights reserved": they are not
+   in the repo, and the deployed image holds text derived from them for this
+   non-commercial prototype. The handbook is from 2005.
 4. **Total cost per triage is unknown** (no `gemini-3.8-flash` price), and
    the pro price is from search results, not the pricing page itself.
 5. **Claude, the code's default provider, is NOT MEASURED.** Neither is
    Vertex AI.
-6. **Not deployed; no live URL.** Cloud Run cold start, autoscaling
-   behaviour and multi-instance sessions are NOT MEASURED, and concurrency
-   20 per instance is not load-tested.
+6. **Deployment limits.**
+   - Cold start is about 50 s, mostly Python imports.
+   - Session affinity is required with 2 instances: without it a turn
+     hung for the full 300 s timeout.
+   - Rate limits live in memory per instance: a client spread over both
+     instances can get up to twice the limit, a restart resets them, and
+     clients behind one NAT share the IP limit.
+   - Neon (AWS us-east-1) is in a different region from Cloud Run
+     (us-central1); the per-turn cost of that is NOT MEASURED separately.
+   - The Gemini key is Tier 1: 250 `gemini-3.1-pro` requests per day.
+     A 31-case run used about 37 and hit the limit after earlier runs.
+   - No load test.
+   - When the intake LLM call fails, the conversation produces no triage
+     card.
 7. **Tracing payload shape is assumed** and unconnected to the real
    platform.
 8. **The safety floor depends on extraction.** The rules are
@@ -240,9 +305,10 @@ hypertension cases F and W flip between standard and urgent across runs.
    conversation by the LLM. The low-confidence loop-back path was fixed
    (HTTP 400 when the request ended with a model turn) but was not
    exercised by real LLM calls in the final run; only tests cover it.
-9. **Latency:** about 40 s median per triage across 2–4 user turns; the
-   final turn waits on 2 sequential LLM calls (median 22.77 s). Gemini
-   response time is the floor.
+9. **Latency:** 43.74 s median per triage across 2–4 user turns (p95
+   71.24 s) on the WHO knowledge base; the completing turn waits on at least
+   2 sequential LLM calls (median 24.40 s). Live, a single turn took 12.97 s
+   median. Gemini response time is the floor.
 10. **Choices that differ from the source text:** the rules treat any
     convulsion as a danger sign (the sample IMNCI text says "more than one
     convulsion"), and young infants under 2 months use child thresholds

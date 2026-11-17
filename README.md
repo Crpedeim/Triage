@@ -113,13 +113,18 @@ safety suite, **not a clinical benchmark** (see `triage-agent/eval/README.md`).
 Headline numbers, before the hardening work and after it (full history in
 [`PHASES.md`](PHASES.md)):
 
-| 31 cases, Gemini (`gemini-3.1-pro-preview` triage, `gemini-3.8-flash` other agents) | Before (Phase 1 code) | Final |
-|---|---|---|
-| Under-triage (the safety metric) | 10/31 | **0/31** |
-| Accuracy (exact level) | 18/31 | **29/31** |
-| Latency per triage, median / p95 (all turns, simulated caregiver excluded) | 63.65 s / 81.79 s | **39.92 s / 49.08 s** |
+| 31 cases, Gemini (`gemini-3.1-pro-preview` triage, `gemini-3.8-flash` other agents) | Before (Phase 1 code) | Phase 7 (8 curated chunks) | Round 2 (874 WHO chunks) |
+|---|---|---|---|
+| Under-triage (the safety metric) | 10/31 | **0/31** | **0/31** |
+| Accuracy (exact level) | 18/31 | 29/31 | **30/31** |
+| Latency per triage, median / p95 (all turns, simulated caregiver excluded) | 63.65 s / 81.79 s | 39.92 s / 49.08 s | 43.74 s / 71.24 s |
 
 The default Claude configuration has not been evaluated.
+
+**Live demo:** https://triage-ai-827630707333.us-central1.run.app (Cloud Run,
+scales to zero, so the first request after idle takes about 50 s; rate
+limited). Three cases run through it gave the expected EMERGENCY, URGENT and
+SELF CARE (`PHASES.md`, R2 Phase 5).
 
 ---
 
@@ -171,7 +176,7 @@ export LLM_PROVIDER=openai OPENAI_API_KEY=<gemini key> \
   MODEL_NAME=gemini-3.1-pro-preview FAST_MODEL_NAME=gemini-3.8-flash
 ```
 
-Container and Cloud Run (Gemini via Vertex AI): see
+Container and Cloud Run (`deploy/deploy_cloud_run.sh`: Gemini API key or Vertex AI, Neon/Postgres sessions, max 2 instances, rate limits): see
 [`triage-agent/deploy/CLOUD_RUN.md`](triage-agent/deploy/CLOUD_RUN.md).
 
 ## Guideline sources and licences
