@@ -410,6 +410,8 @@ class TriageState(TypedDict):
     retrieval_score: int | None                  # Relevance judge score 1-5 for the current guidelines
     retrieval_missing: list[str]                 # What the judge said was missing (feeds reformulation)
     retrieval_retry: bool                        # Supervisor rejected the guidelines; retrieve again
+    retrieval_seen_ids: list[str]                # Chunk ids already judged in this cycle
+    retrieval_exhausted: bool                    # Last attempt found no chunk not already judged
 
     # ─── Triage Agent Output ───
     triage_result: TriageResult | None           # Final triage decision
@@ -447,6 +449,8 @@ def create_initial_state() -> dict:
         "retrieval_score": None,
         "retrieval_missing": [],
         "retrieval_retry": False,
+        "retrieval_seen_ids": [],
+        "retrieval_exhausted": False,
         "triage_result": None,
         "triage_confidence": 0.0,
         "follow_up_questions": [],

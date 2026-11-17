@@ -44,6 +44,7 @@ WHY TWO LLM CALLS:
 
 from __future__ import annotations
 
+import logging
 import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -58,6 +59,8 @@ from prompts.intake_prompt import (
     question_prompt,
 )
 from state import PatientSummary, TriageState
+
+log = logging.getLogger("triage.intake")
 
 # Hard cap on questions per intake round so an interview always terminates
 MAX_INTAKE_QUESTIONS = 8
@@ -79,9 +82,16 @@ def intake_agent(state: TriageState) -> dict:
     extraction_messages = [SystemMessage(content=EXTRACTION_SYSTEM)] + list(messages)
     structured_llm = llm.with_structured_output(PatientSummary)
 
-    try:
-        summary: PatientSummary = structured_llm.invoke(extraction_messages)
-    except Exception:
+    summary = None
+    # One retry: the 31-case eval saw 2 transient HTTP 400s on this call that
+    # did not reproduce on replay; falling back costs the user extra questions.
+    for attempt in range(2):
+        try:
+            summary = structured_llm.invoke(extraction_messages)
+            break
+        except Exception as e:  # noqa: PERF203
+            log.warning("intake extraction failed (attempt %d/2): %s", attempt + 1, str(e)[:300])
+    if summary is None:
         summary = PatientSummary(
             chief_complaint=_extract_chief_complaint_fallback(messages),
             completeness_score=0.1,

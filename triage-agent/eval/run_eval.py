@@ -97,8 +97,10 @@ class Recorder(BaseCallbackHandler):
     def on_llm_error(self, error, *, run_id, **kw):
         with self._lock:
             t0, model, _tags, meta = self._t.pop(run_id, (time.perf_counter(), None, [], {}))
+            body = getattr(error, "body", None)
             self.calls.append(dict(model=model, node=meta.get("langgraph_node"),
-                                   error=str(error)[:300], latency_s=round(time.perf_counter() - t0, 3)))
+                                   error=str(error)[:300], error_body=str(body)[:1000] if body else None,
+                                   latency_s=round(time.perf_counter() - t0, 3)))
 
     def on_chain_start(self, serialized, inputs, *, run_id, **kw):
         name = kw.get("name") or (serialized or {}).get("name")
@@ -273,8 +275,10 @@ def _cost(per_model: dict) -> dict:
             unpriced.append(m); continue
         lo += (u["input"] * p["input"] + u["output"] * p["output"]) / 1e6
         hi += (u["input"] * p["input"] + (u["output"] + u["reasoning"]) * p["output"]) / 1e6
-    return dict(priced_low=round(lo, 6), priced_high=round(hi, 6), unpriced_models=unpriced,
-                total_known=not unpriced)
+    priced_any = any(m in PRICES_PER_M for m in per_model)
+    return dict(priced_low=round(lo, 6) if priced_any else None,
+                priced_high=round(hi, 6) if priced_any else None,
+                unpriced_models=unpriced, total_known=not unpriced)
 
 
 def summarise(results: list[dict], meta: dict) -> dict:
@@ -300,13 +304,19 @@ def summarise(results: list[dict], meta: dict) -> dict:
         llm_calls_per_triage=dict(median=statistics.median([r["llm_calls"] for r in results]) if results else None),
         final_turn_latency_s=_final_turn(results),
         priced_cost_per_triage_usd=dict(
-            low_median=round(statistics.median([c["priced_low"] for c in costs]), 6) if costs else None,
-            high_median=round(statistics.median([c["priced_high"] for c in costs]), 6) if costs else None,
+            # None (= unknown) when no priced model was used: never report $0 for unpriced calls
+            low_median=_median_or_none([c["priced_low"] for c in costs]),
+            high_median=_median_or_none([c["priced_high"] for c in costs]),
             unpriced_models=sorted({m for c in costs for m in c["unpriced_models"]}),
             note="low = reasoning tokens not billed; high = reasoning billed at output rate; "
                  "total cost is unknown while any model is unpriced"),
         confusion=_confusion(results),
     )
+
+
+def _median_or_none(xs):
+    xs = [x for x in xs if x is not None]
+    return round(statistics.median(xs), 6) if xs else None
 
 
 def _final_turn(results):

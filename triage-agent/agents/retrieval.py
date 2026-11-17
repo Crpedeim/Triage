@@ -55,7 +55,7 @@ def retrieval_agent(state: TriageState) -> dict:
 
     if summary is None:
         return {"retrieved_guidelines": [], "retrieval_queries": tried, "retrieval_sufficient": False,
-                "retrieval_attempts": attempt + 1, "retrieval_retry": False}
+                "retrieval_attempts": attempt + 1, "retrieval_retry": False, "retrieval_exhausted": True}
 
     # ─── Queries ─────────────────────────────────────────────────────────
     queries: list[str] = []
@@ -73,10 +73,17 @@ def retrieval_agent(state: TriageState) -> dict:
     if not docs:
         docs = multi_query_search(queries=queries, n_results_per_query=4, guideline_type=None)
 
+    seen = list(state.get("retrieval_seen_ids") or [])
+    new_ids = [d.id for d in docs if d.id not in seen]
     return {
         "retrieved_guidelines": [doc.to_dict() for doc in docs],
         "retrieval_queries": tried + [q for q in queries if q not in tried],
         "retrieval_attempts": attempt + 1,
+        "retrieval_seen_ids": seen + new_ids,
+        # A retry that surfaces no chunk the judge has not already seen cannot
+        # change the outcome: the supervisor stops retrying (measured: the
+        # adult chest-pain / stroke cases retried 3x against the same 2 chunks).
+        "retrieval_exhausted": attempt > 0 and not new_ids,
         "retrieval_retry": False,
         # Judged by relevance_check_agent, which runs in parallel with triage
         "retrieval_score": None,

@@ -83,6 +83,8 @@ def supervisor(state: TriageState) -> dict:
                 retrieval_score=None,
                 retrieval_missing=[],
                 retrieval_retry=False,
+                retrieval_seen_ids=[],
+                retrieval_exhausted=False,
             )
         else:
             update["phase"] = Phase.INTAKE.value
@@ -108,6 +110,7 @@ def _guidelines_rejected(state: TriageState) -> bool:
         and score is not None
         and score < RELEVANCE_THRESHOLD
         and state.get("retrieval_attempts", 0) < MAX_RETRIEVAL_ATTEMPTS
+        and not state.get("retrieval_exhausted", False)
     )
 
 

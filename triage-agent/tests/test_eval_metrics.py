@@ -60,3 +60,11 @@ def test_cases_file_is_well_formed():
         assert c["expected"] in SEVERITY
         for k in ("basis", "opening", "vignette"):
             assert c[k].strip(), (c["id"], k)
+
+
+def test_priced_cost_is_unknown_not_zero_when_no_model_priced():
+    c = _cost({"gemini-3.8-flash": dict(input=1000, output=100, reasoning=0, total=1100)})
+    assert c["priced_low"] is None and c["priced_high"] is None and c["total_known"] is False
+    s = summarise([_r("a", "urgent", "urgent", per_model={"gemini-3.8-flash": dict(input=1, output=1, reasoning=0, total=2)})],
+                  {"label": "t"})
+    assert s["priced_cost_per_triage_usd"]["low_median"] is None

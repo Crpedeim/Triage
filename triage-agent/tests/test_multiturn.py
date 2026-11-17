@@ -326,6 +326,48 @@ def test_judge_rejection_discards_speculative_triage_and_reformulates():
 
 
 def test_judge_rejects_every_attempt_stops_at_max_attempts():
+    """Every attempt brings new chunks but the judge keeps rejecting → stop at MAX_RETRIEVAL_ATTEMPTS."""
+    from graph import create_graph, run_turn
+    from rag.store import Document
+
+    ids = iter(range(100))
+    new_docs = lambda *a, **k: [Document(content="c", metadata={"section": "s"}, id=f"d{next(ids)}")]  # noqa: E731
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["q1"])],
+                              "TriageResult": [triage(conf=0.9)]})
+    app = create_graph()
+    with stubbed(llm), patch("agents.retrieval.multi_query_search", side_effect=new_docs), \
+         patch("agents.retrieval.evaluate_relevance", side_effect=lambda *a, **k: {"score": 1, "missing_aspects": []}):
+        r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+    assert r["is_complete"]
+    assert r["state"]["retrieval_attempts"] == 3
+    assert llm.count("structured:TriageResult") == 3
+
+
+def test_intake_extraction_retries_once_before_falling_back():
+    """A single transient extraction failure must not degrade the summary (seen twice in the Phase 5 eval)."""
+    from agents.intake import intake_agent
+    from langchain_core.messages import HumanMessage
+    from state import create_initial_state
+
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("Error code: 400")
+        return summary(0.9)
+
+    llm = StubLLM(structured={"PatientSummary": [flaky, flaky]})
+    s = create_initial_state()
+    s["messages"] = [HumanMessage(content="3 year old with cough")]
+    with patch("agents.intake.get_fast_llm", return_value=llm):
+        out = intake_agent(s)
+    assert calls["n"] == 2
+    assert out["patient_summary"].completeness_score == 0.9, "used the retried result, not the 0.1 fallback"
+
+
+def test_retrieval_retry_stops_when_no_new_chunks():
+    """Judge rejects, but the reformulated search returns the same chunks → stop after attempt 2."""
     from graph import create_graph, run_turn
 
     llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["q1"])],
@@ -334,6 +376,23 @@ def test_judge_rejects_every_attempt_stops_at_max_attempts():
     with stubbed(llm), patch("agents.retrieval.evaluate_relevance",
                              side_effect=lambda *a, **k: {"score": 1, "missing_aspects": []}):
         r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+    st = r["state"]
     assert r["is_complete"]
-    assert r["state"]["retrieval_attempts"] == 3
-    assert llm.count("structured:TriageResult") == 3
+    assert st["retrieval_attempts"] == 2 and st["retrieval_exhausted"] is True
+    assert llm.count("structured:TriageResult") == 2
+
+
+def test_retrieval_retry_continues_when_new_chunks_appear():
+    from graph import create_graph, run_turn
+    from rag.store import Document
+
+    batches = iter([[DOC], [Document(content="other", metadata={"section": "S2"}, id="doc-2")],
+                    [Document(content="third", metadata={"section": "S3"}, id="doc-3")]])
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["q1"])],
+                              "TriageResult": [triage(conf=0.9)]})
+    app = create_graph()
+    with stubbed(llm), \
+         patch("agents.retrieval.multi_query_search", side_effect=lambda *a, **k: next(batches)), \
+         patch("agents.retrieval.evaluate_relevance", side_effect=lambda *a, **k: {"score": 1, "missing_aspects": []}):
+        r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+    assert r["state"]["retrieval_attempts"] == 3  # every retry brought a new chunk → full 3 attempts
