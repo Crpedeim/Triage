@@ -532,3 +532,137 @@ deployed" in `RESUME_FACTS.md`, which was written before this):
   (`gemini-api-key`).
 - One manual browser check of case A on that revision returned EMERGENCY.
   No other measurements were taken on it.
+
+## R2 Phase 1: knowledge base from the full WHO guidelines (commits `91557e9`, `f15ca9c`)
+
+### Sources (downloaded from WHO IRIS on 2026-11-17)
+| Document | IRIS record | PDF | Pages | Licence (read from the PDF's copyright page) |
+|---|---|---|---|---|
+| IMCI chart booklet, WHO 2014 (ISBN 9789241506823) | `iris.who.int/handle/10665/104772` | 5,304,057 bytes, sha256 `7018498d…` | 80 | © WHO 2014, all rights reserved |
+| IMCI handbook, WHO 2005 (ISBN 9241546441) | `iris.who.int/handle/10665/42939` | 1,299,724 bytes, sha256 `d0f9cf6a…` | 173 | © WHO 2005, all rights reserved |
+| WHO PEN, 2020 (ISBN 9789240009226) | `iris.who.int/handle/10665/334186` | 2,584,724 bytes, sha256 `a09cc0ea…` | 85 | CC BY-NC-SA 3.0 IGO (also in the IRIS record) |
+
+Full URLs and hashes: `triage-agent/rag/guidelines/sources.json`. "IMNCI" is
+India's adaptation; WHO publishes IMCI, so the WHO IMCI originals are used.
+Because both IMCI documents are "all rights reserved" and the GitHub repo is
+public, **no PDF and no extracted text is committed**. The PDFs are
+sha256-checked, and the multi-stage Dockerfile keeps them out of every layer
+of the final image. Attribution: README "Guideline sources and licences" and
+an always-visible footer in the app, built from `sources.json`.
+
+### Extraction (`rag/pdf_extract.py`, `rag/build_kb.py`)
+- **Glyph-id fonts.** Several fonts in the chart booklet and WHO PEN have no
+  Unicode map, so PyMuPDF returns glyph ids: glyph = ASCII - 29, space = 0x03
+  (`6,&.<281*` = "SICK YOUNG"). Repaired by decoding, plus 16 ligature and
+  symbol glyphs audited in the documents (`ȴ`=fi, `Ȳ`=≥, `Ɖ`=µ, …). A
+  font-based rule for single shifted words without 0x03 decodes 18 spans in
+  the chart booklet, all correctly. Its first version also wrongly decoded 223
+  spans in WHO PEN (digits, ISBNs, URLs); the tightened rule decodes 0 there.
+- **Classification tables.** `find_tables()` found the IMCI grids but split
+  and merged rows and dropped the spaces between words
+  ("Givefirstdoseofanappropriateantibiotic"). Every classification row is a
+  pink/yellow/green filled cell triple, so rows are taken from those fills and
+  each cell is read by clipping. Each row becomes "Signs: … -> Classification:
+  … (Pink/Yellow/Green: meaning) -> Treatment: …" under its heading (e.g.
+  `chart booklet > THEN ASK ABOUT MAIN SYMPTOMS > Does the child have cough
+  or difficult breathing?`). 48 classification rows were extracted.
+- **Other tables** (dose tables, care-response tables): `find_tables()` grid,
+  each cell read by clipping, each row "header: value; …". Tables where
+  find_tables returns one row per text line (a sparse key column such as
+  CLASSIFY AS) are read as prose instead. Merging those rows was tried first
+  and mixed neighbouring conditions.
+- Every chunk starts with its section heading.
+
+### Quality check (20 random chunks per document, seed 7)
+| Pass | Auto-flagged | Found by reading all 60 | Action |
+|---|---|---|---|
+| 1st | 1/60 (PEN p18, number-heavy) | 5 more: 4 table rows cut mid-word (chart p61, p63; handbook p97; PEN p49), 1 heading in a second glyph encoding (PEN p30) | added the `fragmented` check (words that are not on the page), heading clean-up, prose fallback for line-split tables, URL stripping |
+| final | 0/60 | 0 garbled. Cosmetic only: a figure label ("Fold") in one handbook heading; handbook chapters include their embedded case-recording-form text | none |
+
+A page is rejected when more than 30% of its chunks are garbled (fragmented
+table rows are dropped one by one and do not reject a page); on accepted
+pages, flagged chunks are dropped individually.
+
+| Document | Pages | Used | Replaced by curated excerpt | Skipped (reason: pages) |
+|---|---|---|---|---|
+| IMCI chart booklet | 80 | 58 | 0 | 22 (front matter 4, recording forms 8, growth charts 6, garbled 2: p28 dose table in a non-linear glyph font, p78 scanned mother's card; no text 2) |
+| IMCI handbook | 173 | 149 | 0 | 24 (front matter 10, recording forms 4, mother's card 2, no text 8) |
+| WHO PEN | 85 | 41 | 0 | 44 (front matter 7, programme introduction 5, CVD risk charts 1, implementation/annexes 18, no text 13) |
+| **Total** | **338** | **248** | **0** | **90** |
+
+No covering page was rejected, so **none of the 8 curated excerpts is kept**.
+(In an earlier pass PEN p18 was rejected and the curated hypertension excerpt
+replaced it; once URL-only text stopped counting as garbled, its text merged
+into p17's chunk and the page counts as used.) Chunks dropped on used pages:
+4 (chart), 0 (handbook), 1 (PEN).
+
+### Chunk size (retuned)
+The embedding model reads at most 256 tokens (all-MiniLM-L6-v2
+`max_seq_length`); text beyond that is ignored. Measured with its tokenizer on
+the final extractor:
+
+| size/overlap (chars) | chunks | tokens median/p95/max | over 256 tokens | classification rows split | table rows split |
+|---|---|---|---|---|---|
+| 500/50 (old default) | 1364 | 110/142/259 | 1 (0.1%) | 8/48 | 15/124 |
+| 700/100 | 1053 | 144/189/308 | 4 (0.4%) | 2/48 | 9/124 |
+| **900/120 (chosen)** | **874** | **170/232/379** | **8 (0.9%)** | **1/48** | **4/124** |
+| 1100/150 | 765 | 183/282/556 | 147 (19.2%) | 1/48 | 2/124 |
+
+### Knowledge base
+- **874 chunks** (`imnci` 788, `who_pen` 86) from 3 documents and 248 pages.
+  Chunk characters: median 757, p95 964, max 1041. Vector store 8.5 MB.
+- **Age filter** unchanged and working on the new metadata (`guideline_type`
+  comes from the manifest): `PatientSummary(age=3)` -> `imnci`, `age=40` ->
+  `who_pen`, `age=10` or unknown -> no filter. Filtered searches returned only
+  chunks of that type. Case A's query: top hits were chart booklet p6 (incl.
+  the classification row) and handbook 7.1-7.2. Noted: young-infant
+  (under 2 months) chunks are also `imnci`, so an under-5 query can retrieve
+  them (a diarrhoea query returned young-infant jaundice rows).
+- Built at **image build time** in the Dockerfile's `kb` stage: 71.8 s in
+  Cloud Build (log 10.3 s -> 82.1 s), with the same report as the local build.
+  Locally (this laptop): extraction + checks 31.05 s, embed + store 14.1 s.
+
+### Build problems found and fixed
+- Cloud Build's default path cannot build this Dockerfile ("the --mount option
+  requires BuildKit"); `deploy/cloudbuild.yaml` sets `DOCKER_BUILDKIT=1`. The
+  existing `deploy_cloud_run.sh` (`gcloud builds submit --tag`) has the same
+  problem; it had never been run against Google Cloud.
+- iris.who.int returns **HTTP 403 to Cloud Build** (from a workstation the
+  same URL returns 200/302 for every user agent tried). The deploy uploads the
+  locally fetched, hash-checked PDFs in the private build context;
+  `fetch_guidelines` downloads only when a file is missing.
+
+### Cold start, before vs after (Cloud Run, measured)
+Service `triage-ai-bench` (private), us-central1, 2 GiB, 1 vCPU, CPU boost,
+min 0 / max 1. Each deploy starts a new instance. Cold start = Cloud Run's
+"Starting new instance" log -> "STARTUP TCP probe succeeded" log
+(`deploy/coldstart_from_logs.py`).
+
+| Image | Knowledge base | Samples (s) | Median |
+|---|---|---|---|
+| before: `main` `e6230ed` | 8 sample chunks, built at image build | 47.68, 52.17, 35.50 | **47.68 s** |
+| after: `f15ca9c` | 874 WHO chunks, built at image build | 45.36, 36.28, 50.31 | **45.36 s** |
+
+**No measurable difference:** both sets span about 35-52 s. One startup per
+image, broken down by the app's log timestamps:
+
+| Step | before (`bench-00003`) | after (`bench-00006`) |
+|---|---|---|
+| instance start -> first app log line | 10.40 s | 14.85 s |
+| graph ready -> embedding model starts loading (`torch` / `sentence-transformers` import) | 22.63 s | 31.42 s |
+| model weights loaded | 0.83 s | 1.30 s |
+| open the vector store and count chunks | 0.47 s | 1.09 s |
+
+Startup is dominated by Python imports, not the knowledge base, and neither
+image ingests at startup. The quick-deploy image from the start of Round 2
+started in 15.06-19.65 s with different dependencies (Gradio 6, unpinned);
+that difference is NOT investigated here.
+
+### Tests
+`tests/test_pdf_extract.py`: 25 offline tests (glyph repair on strings from
+the real PDFs, including the PEN strings that must not be decoded; quality
+flags; line-split tables; a synthetic chart page with coloured cells; heading
+clean-up; manifest integrity). Suite on this machine (Python 3.14.0, Windows):
+252 passed, 4 skipped, 1 failed. The failure,
+`test_tracing.py::test_platform_down_never_breaks_or_blocks_triage`, also
+fails on untouched `main` (`e6230ed`) on this machine.
