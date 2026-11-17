@@ -57,6 +57,9 @@ def retrieval_agent(state: TriageState) -> dict:
         return {"retrieved_guidelines": [], "retrieval_queries": tried, "retrieval_sufficient": False,
                 "retrieval_attempts": attempt + 1, "retrieval_retry": False, "retrieval_exhausted": True}
 
+    if os.getenv("RETRIEVAL_BACKEND", "langgraph") == "adk":
+        return _adk_attempt(state, summary, attempt, tried)
+
     # ─── Queries ─────────────────────────────────────────────────────────
     queries: list[str] = []
     if attempt == 0:
@@ -86,6 +89,30 @@ def retrieval_agent(state: TriageState) -> dict:
         "retrieval_exhausted": attempt > 0 and not new_ids,
         "retrieval_retry": False,
         # Judged by relevance_check_agent, which runs in parallel with triage
+        "retrieval_score": None,
+        "retrieval_sufficient": False,
+    }
+
+
+def _adk_attempt(state, summary, attempt: int, tried: list[str]) -> dict:
+    """One retrieval attempt by the ADK ReAct agent (agents/adk_retrieval.py, optional)."""
+    from agents.adk_retrieval import adk_retrieve  # imported lazily: google-adk is optional
+
+    context = _build_patient_context(summary)
+    if tried:
+        context += "\nAlready searched (did not satisfy the reviewer): " + "; ".join(tried)
+    if state.get("retrieval_missing"):
+        context += "\nPreviously missing: " + "; ".join(state["retrieval_missing"])
+    docs, queries, _ = adk_retrieve(summary, context, _get_guideline_type(summary))
+    seen = list(state.get("retrieval_seen_ids") or [])
+    new_ids = [d.id for d in docs if d.id not in seen]
+    return {
+        "retrieved_guidelines": [d.to_dict() for d in docs],
+        "retrieval_queries": tried + [q for q in queries if q not in tried],
+        "retrieval_attempts": attempt + 1,
+        "retrieval_seen_ids": seen + new_ids,
+        "retrieval_exhausted": attempt > 0 and not new_ids,
+        "retrieval_retry": False,
         "retrieval_score": None,
         "retrieval_sufficient": False,
     }

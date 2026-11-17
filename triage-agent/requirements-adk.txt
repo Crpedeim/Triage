@@ -1,0 +1,16 @@
+# OPTIONAL: Phase 7 ADK ReAct retrieval agent (RETRIEVAL_BACKEND=adk).
+# Install on top of requirements.txt, ideally in its own virtualenv:
+#   python -m venv --system-site-packages .venv-adk && .venv-adk/bin/pip install -r requirements-adk.txt
+# Why these pins:
+#   google-adk >= 2.1 needs google-genai >= 2.30 → pydantic >= 2.12.5 (conflicts with gradio 5.50.0)
+#   google-adk 2.0.0 needs google-genai < 2 and opentelemetry <= 1.41.1; chromadb's OTLP exporter
+#   must then match 1.41.1 too. ADK's LiteLLM route pins openai==2.24.0 / pydantic==2.12.5, so
+#   agents/adk_retrieval.py uses its own BaseLlm adapter over the openai SDK instead.
+google-adk==2.0.0
+google-genai==1.75.0
+pydantic==2.12.3
+opentelemetry-api==1.41.1
+opentelemetry-sdk==1.41.1
+opentelemetry-proto==1.41.1
+opentelemetry-exporter-otlp-proto-common==1.41.1
+opentelemetry-exporter-otlp-proto-grpc==1.41.1
