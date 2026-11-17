@@ -867,3 +867,80 @@ completing turn (retrieval + judge + triage). The cases ran right after the
 cold start, on a warm instance. The script did not capture the cited
 sections in this run (a parsing bug, fixed afterwards); the card citing WHO
 IMCI sections was seen in the browser in R2 Phase 3.
+
+# Round 3: tracing to the live eval platform
+
+Same rules: every number comes from a command that was run, and anything not
+measured is marked NOT MEASURED. Branch `claude/who-guidelines-hardening`
+(Round 2 is not merged into `main` yet). Platform:
+https://eval-web-827630707333.us-central1.run.app. Contract:
+`docs/TRACING_API.md` in the eval platform repo (`main` at `2fe84bb`),
+copied to `triage-agent/tests/contract/TRACING_API.md`.
+
+## R3 Phase 1: tracing.py matches the contract
+
+**Changed (`tracing.py`, rewritten):**
+- **Payload: exactly the documented `POST /api/v1/traces` body.** Fields:
+  `name`, `input`, `output`, `model`, `promptTokens`, `completionTokens`,
+  `latencyMs`, `status`, `metadata`, `spans`; integers for tokens and
+  latency; `Authorization: Bearer <TRACE_API_KEY>`. **No cost is sent**: the
+  platform computes it. The old assumed shape (`trace_id`, `usage`,
+  `cost_usd`, `span_id`, …) and the `TRACE_API_KEY_HEADER` option are gone.
+- **One trace per user turn.** `name` is `triage.turn` when the turn ends
+  with a question and `triage.final` on the turn that produces the triage
+  card. The platform scopes evaluators by trace name only, so a separate name
+  is the way to run judges on final turns alone.
+- **Span tree** (`id` / `parentId`): a root span `turn` for the whole turn →
+  one span per agent run (`intake`, `retrieval`, `relevance_judge`, `triage`
+  with kind `agent`; `supervisor` kind `router`; `output`) → one span per LLM
+  call (kind `llm`) with `model`, `promptTokens`, `completionTokens`
+  (including reasoning tokens: Gemini's `total - input`), `latencyMs`,
+  `startedAt`, `status`. An LLM call is attached to its agent by walking the
+  LangChain parent run ids, so the parallel judge and triage calls land under
+  the right agent. Tokens sit only on the LLM leaves, as the contract asks,
+  so the platform counts each call once. Capped at the contract's 500 spans.
+- **Metadata:** `sessionId`, `turn` (1-based, counted from the checkpointed
+  messages, so it survives restarts), `final`, `phase`, `llmCalls`, `models`;
+  on the final turn also `triageLevel`, `triageConfidence`,
+  `guidelinesCited`, `assistantMessage`. `run_turn(..., trace_metadata=)`
+  adds caller fields; the eval sends `evalCase`, `evalLabel`, `expected`.
+- **What a judge sees on the final turn.** The platform's LLM judge reads
+  only `input` and `output`, so `triage.final` carries `input` = the whole
+  conversation plus the guideline text the triage agent was given (document,
+  pages, section, chunk text) and `output` = the plain-text triage card.
+  Non-final turns carry the user message and the reply.
+- **Never breaks or slows triage.** Building the payload is wrapped (a bug
+  there is logged and counted, the turn still returns); a bounded queue and
+  a daemon thread send it; `TRACE_TIMEOUT_S` (default 5 s) per request; 3
+  attempts on network errors, timeouts, 429 and 5xx; 400/401/422 logged with
+  the platform's error body and not retried. `Tracer.stats` counts
+  submitted / sent / failed / dropped / retries; `Tracer.accepted` keeps the
+  202 bodies (trace id, `costUsd`, `evalsQueued`). A SIGTERM handler
+  (`install_sigterm_flush()`, called by `app.py`) sends queued traces before
+  a Cloud Run instance stops.
+- `eval/run_eval.py` stores the thread id per case and, when tracing is on,
+  the tracer stats and every 202 body in the result file.
+
+**Tests** (`tests/test_tracing.py` rewritten, `tests/test_tracing_contract.py`
+new):
+- The contract checker (`tests/contract/trace_contract.py`) reads the
+  document itself: its multi-agent curl example and minimal example pass; its
+  422 example (span `parentId "plannr"`) is reproduced word for word; the
+  duplicate-id and cycle rules give the document's messages.
+- Every payload from a real compiled-graph conversation (stub LLM) passes the
+  checker, and with `EVAL_PLATFORM_REPO` set, **the platform's own zod schema**
+  (`src/lib/trace-input.ts`, run with `npx tsx`) accepts them too; the
+  platform computed $0.0108 for the document's example, the figure the
+  document states.
+- The sender against the documented responses: 202 body recorded; 400, 401
+  and 422 bodies logged, 1 request each (no retry); 500 retried (3 requests);
+  500 then 202 delivered once.
+- A platform that is down (closed port) or slow (2 s per request): the turns
+  still complete, and no turn took 5 s or more (down) or 2 s or more (slow).
+- Full suite on the Windows laptop: **277 passed, 4 skipped, 0 failed**. The
+  `test_tracing` platform-down test that failed in Round 2 now passes. The
+  old test gave the sender 5 s, but on this laptop a request to the closed
+  port 127.0.0.1:9 hits the 0.5 s timeout instead of being refused (3 tries:
+  0.526, 0.509, 0.508 s), so 2 traces × 3 attempts plus the 0.2/0.4/0.8 s
+  backoff come to about 5.8 s. The new test waits up to 60 s and checks
+  instead that the turns themselves did not wait.

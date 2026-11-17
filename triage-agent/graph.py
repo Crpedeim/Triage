@@ -182,6 +182,7 @@ def run_turn(
     thread_id: str,
     user_message: str,
     config: dict | None = None,
+    trace_metadata: dict | None = None,
 ) -> dict[str, Any]:
     """
     Process one user message and return the system's response.
@@ -195,6 +196,8 @@ def run_turn(
         user_message: The user's text input.
         config:       Optional LangGraph config (e.g. {"callbacks": [...]}).
                       thread_id always comes from the thread_id argument.
+        trace_metadata: Extra metadata for this turn's trace (e.g. the eval
+                      case id). Ignored when tracing is off.
 
     Returns:
         {
@@ -211,11 +214,12 @@ def run_turn(
 
     # Tracing (no-op unless TRACE_API_URL and TRACE_API_KEY are set)
     tracer = tracing.get_tracer()
-    turn_trace = tracer.new_turn(thread_id, user_message)
+    turn_trace = tracer.new_turn(thread_id, user_message, trace_metadata)
     if turn_trace is not None:
         thread_config["callbacks"] = list(thread_config.get("callbacks") or []) + [turn_trace]
 
     current_state = _get_current_state(app, thread_config)
+    was_done = bool(current_state) and current_state.get("phase") == Phase.DONE.value
     user_input = {"messages": [HumanMessage(content=user_message)], "awaiting_user": False}
 
     try:
@@ -229,8 +233,8 @@ def run_turn(
             app.invoke(user_input, config=thread_config)
     except Exception:
         if turn_trace is not None:
-            tracer.submit(turn_trace.build_payload(output="", state=_get_current_state(app, thread_config),
-                                                   status="error", service=tracer.service))
+            turn_trace.finish()
+            tracer.submit_turn(turn_trace, output="", state=_get_current_state(app, thread_config), status="error")
         raise
 
     # ─── Read the updated state ───────────────────────────────────────────
@@ -252,7 +256,9 @@ def run_turn(
     is_complete = phase == Phase.DONE.value
 
     if turn_trace is not None:
-        tracer.submit(turn_trace.build_payload(output=last_ai_message, state=state, service=tracer.service))
+        turn_trace.finish()
+        tracer.submit_turn(turn_trace, output=last_ai_message, state=state,
+                           final=is_complete and not was_done)
 
     return {
         "message": last_ai_message,

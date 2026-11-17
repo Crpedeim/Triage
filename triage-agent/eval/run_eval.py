@@ -60,6 +60,7 @@ from pricing import PRICES_PER_M  # noqa: E402
 
 MAX_CAREGIVER_TURNS = int(os.getenv("EVAL_MAX_CAREGIVER_TURNS", "10"))
 MAX_STEPS = int(os.getenv("EVAL_MAX_STEPS", "30"))
+EVAL_LABEL = ""   # set by main(); sent as trace metadata when tracing is on
 
 
 class Recorder(BaseCallbackHandler):
@@ -190,13 +191,15 @@ def run_case_run_turn(app, case, caregiver, rec):
     """Production driver: graph.run_turn(), exactly what the UI calls."""
     from graph import run_turn
     thread_id = str(uuid.uuid4())
+    rec.thread_id = thread_id
     transcript, cg_log = [("caregiver", case["opening"])], []
     sys_time, turns, status = 0.0, 0, "ok"
     msg = case["opening"]
     rec.turn_times = []
     for _ in range(MAX_CAREGIVER_TURNS + 1):
         t0 = time.perf_counter()
-        r = run_turn(app, thread_id, msg, config={"callbacks": [rec]})
+        r = run_turn(app, thread_id, msg, config={"callbacks": [rec]},
+                     trace_metadata={"evalCase": case["id"], "evalLabel": EVAL_LABEL, "expected": case["expected"]})
         dt = time.perf_counter() - t0
         sys_time += dt
         rec.turn_times.append(round(dt, 3))
@@ -249,7 +252,8 @@ def run_case(case: dict, driver: str, caregiver: Caregiver) -> dict:
         intake_questions_asked=turns, system_wall_s=round(sys_time, 3),
         llm_calls=len(rec.calls), llm_errors=[c for c in rec.calls if "error" in c],
         per_model=per_model, node_times=rec.nodes, calls=rec.calls,
-        turn_times=getattr(rec, "turn_times", None),  # per run_turn() call (run_turn driver only)
+        turn_times=getattr(rec, "turn_times", None),
+        thread_id=getattr(rec, "thread_id", None),  # per run_turn() call (run_turn driver only)
         caregiver=dict(calls=len(cg_log), total_tokens=sum(c["total_tokens"] for c in cg_log),
                        wall_s=round(sum(c["latency_s"] for c in cg_log), 3)),
         transcript=transcript,
@@ -352,6 +356,8 @@ def main(argv=None):
     ap.add_argument("--cases", default=str(Path(__file__).parent / "cases.json"))
     args = ap.parse_args(argv)
 
+    global EVAL_LABEL
+    EVAL_LABEL = args.label
     cases = json.load(open(args.cases))
     if args.case_set:
         cases = [c for c in cases if c.get("set") == args.case_set]
@@ -373,6 +379,11 @@ def main(argv=None):
     with ThreadPoolExecutor(max_workers=args.concurrency) as ex:
         results = list(ex.map(lambda c: run_case(c, args.driver, caregiver), cases))
     meta["suite_wall_s"] = round(time.perf_counter() - t0, 2)
+    import tracing
+    tracer = tracing.get_tracer()
+    if tracer.enabled:
+        meta["tracing"] = dict(endpoint=tracer.endpoint, drained=tracer.flush(60), stats=dict(tracer.stats),
+                               accepted=list(tracer.accepted))
 
     for r in results:
         print(f"{r['id']:40s} exp={r['expected']:9s} pred={str(r['predicted']):9s} "

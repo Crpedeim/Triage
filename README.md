@@ -166,7 +166,7 @@ pytest                                 # test suite
 Configuration (environment):
 - `LLM_PROVIDER` plus that provider's key; `MODEL_NAME` / `FAST_MODEL_NAME` optional
 - `CHECKPOINT_DB_URL` (Postgres) and `BROWSER_STATE_SECRET` for persistent sessions
-- `TRACE_API_URL` and `TRACE_API_KEY` for tracing
+- `TRACE_API_URL` and `TRACE_API_KEY` to send one trace per turn to the eval platform (`POST /api/v1/traces`, contract in `triage-agent/tests/contract/TRACING_API.md`)
 - `TEST_POSTGRES_URL` enables the Postgres tests
 
 To run on Gemini through Google's OpenAI-compatible endpoint (how the eval was run):

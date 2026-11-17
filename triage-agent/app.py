@@ -300,6 +300,8 @@ with gr.Blocks(
 
 
 if __name__ == "__main__":
+    import tracing
+    tracing.install_sigterm_flush()   # send queued traces when Cloud Run stops the instance
     demo.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", "7860")),
