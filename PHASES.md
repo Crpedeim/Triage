@@ -285,3 +285,86 @@ In the completing turn's trace, the agent spans were:
 - triage 14,955.5 ms (1 call, 4,666 tokens, $0.031092 with reasoning billed)
 
 The trace total cost was `null`, because `gemini-3.8-flash` is unpriced.
+
+---
+
+## Phase 5: latency (commits `cbcee90`, `c16837b`, `d466cad`)
+
+### Profile: where the time went
+From the recorded per-node and per-call timings (`python -m eval.profile`):
+
+| | Phase 1 code (31 cases) | Phase 2 code (31 cases) |
+|---|---|---|
+| LLM calls as % of system wall time | 99.5% | 88.2% (the remainder is the cold-start bug below) |
+| intake node | 58.6% (2 sequential flash calls per turn, ~5.8 s each) | 47.4% |
+| retrieval node (query generation → search → judge, sequential) | 21.2% | 33.9% |
+| triage node (1 pro call, median ~11–12 s) | 20.1% | 18.6% |
+| median reasoning tokens per flash call | 470 (vs 64 visible output) | 462–559 |
+
+The completing turn made **5 sequential LLM calls**: extraction, completion
+message, query generation, relevance judge, triage. Embeddings plus vector
+search took 46–67 ms per case (Phase 0 measurement), which is negligible.
+
+### What changed
+1. **Fewer round trips.** The intake extraction call also emits
+   `PatientSummary.search_queries`; retrieval attempt 1 uses them, so the
+   separate query-generation call is gone. The completion message is fixed
+   text (it was an LLM call writing one courtesy sentence).
+2. **Parallel independent calls.** `relevance_check` (the LLM judge) is its
+   own node and runs **in parallel with triage** after retrieval (a LangGraph
+   fan-out). If the judge rejects the guidelines, the supervisor discards
+   that speculative triage and re-runs retrieval with reformulated queries.
+   The self-correction loop is preserved at graph level. A timed test
+   (0.4 s + 0.4 s stubs finish in < 0.75 s) proves the overlap.
+3. **Cold start.** The embedding model load is locked: parallel first
+   requests had each loaded their own copy, 31–72 s per case for the first
+   4 cases after a restart. The app also warms the model before serving.
+4. **Tail fixes found by the Phase 5 eval (5b, 5c):**
+   - Stop retrying retrieval when a reformulated search returns no chunk the
+     judge hasn't already seen. The adult chest-pain and stroke cases
+     retried 3× against the same 2 chunks.
+   - Fixed an HTTP 400 on **every** low-confidence loop-back. The extraction
+     request ended with the AI's own message, and Gemini rejects requests
+     ending with a model turn. The cause was found by recording API error
+     bodies: 4/4 errored cases were loop-back cases and every loop-back hit
+     it. The stub LLM now mimics that rejection, so the tests catch it.
+   - The extraction is retried once before falling back.
+5. **Model choice, measured:** flash for triage (variant B) vs pro (variant A).
+6. **Not adopted:** `reasoning_effort` on `gemini-3.8-flash`. `"minimal"`
+   returns HTTP 400. `"none"` and `"low"` cut reasoning to 0 on some calls
+   and not on others (n=3 each), so latency differences were within noise.
+
+### Results (31 cases, `--driver run_turn --concurrency 4`)
+
+| Metric | Before: Phase 2 | A: Phase 5, pro triage (`cbcee90`) | B: Phase 5, flash triage (`cbcee90`) | **Final: 5b, pro triage (`c16837b`)** |
+|---|---|---|---|---|
+| **Latency median, all 31** | 53.95 s | 35.98 s | 39.93 s | **36.95 s** |
+| **Latency p95, all 31** | 117.96 s | 85.84 s | 110.99 s | **52.56 s** |
+| Latency median / p95, cases 5–31 (no cold start) | 51.28 / 68.03 s | 35.44 / 85.84 s | 39.18 / 110.99 s | **36.95 / 49.15 s** |
+| Completing turn median / p95 | not recorded | 20.67 / 63.03 s | 24.10 / 76.29 s | **22.03 / 41.57 s** |
+| Triage LLM call, median | 10.94 s | 10.88 s | **14.21 s** (flash) | 11.59 s |
+| LLM calls per triage, median | 7 | 5 | 5 | 5 |
+| Tokens per triage, median | 12,198 | 10,869 | 11,178 | 10,891 |
+| Priced cost per triage, median (triage model only) | $0.0127–$0.0217 | $0.0133–$0.0219 | unknown (no priced model used) | $0.0133–$0.0216 |
+| **Accuracy** | 30/31 | 29/31 | 28/31 | **28/31** |
+| **Under-triage** | 0/31 | 0/31 | 0/31 | **0/31** |
+| Over-triage | 1/31 (X) | 2/31 (F, X) | 3/31 (F, W, X) | 3/31 (F, W, X) |
+| Triage calls (31 cases) | 31 | 37 (6 discarded after the judge rejected) | 36 | 34 |
+| LLM errors | 0 | 2 | 1 | 1 (all loop-back 400s; fixed in 5c) |
+
+**Decision:** keep `gemini-3.1-pro-preview` for triage. The flash model was
+**slower** on the triage call (14.21 s vs 10.88 s median) and less accurate
+(one more over-triage), so "fast model where accuracy holds" did not hold.
+
+**Accuracy caveat:** 30/31 → 28/31 comes entirely from over-triaging
+grade-2 hypertension (F, W: standard → urgent). Both were also called
+urgent in the Phase 1 31-case run, and they have flipped between standard
+and urgent across runs. One run per variant can't separate a Phase 5
+effect from run-to-run LLM variation, so I don't claim either way.
+Under-triage, the safety metric, stayed at 0/31 in every Phase 5 run.
+
+The 5c loop-back fix landed after the final Phase 5 run. It is measured in
+the final full run (Phase 6).
+
+**Tests at `d466cad`** (clean worktree): 221 passed, 3 skipped. With
+`TEST_POSTGRES_URL` set, 223 passed, 1 skipped (the original API-key test).

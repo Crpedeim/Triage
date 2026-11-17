@@ -1,0 +1,6392 @@
+{
+ "summary": {
+  "meta": {
+   "label": "suite31_phase5b",
+   "driver": "run_turn",
+   "concurrency": 4,
+   "llm": {
+    "provider": "openai",
+    "main_model": "gemini-3.1-pro-preview",
+    "fast_model": "gemini-3.8-flash",
+    "temperature": 0.0
+   },
+   "caregiver_model": "gemini-3.8-flash",
+   "started": "2026-11-17T01:33:18+0000",
+   "n_cases": 31,
+   "suite_wall_s": 404.85
+  },
+  "n": 31,
+  "accuracy": {
+   "correct": 28,
+   "n": 31
+  },
+  "under_triage": {
+   "count": 0,
+   "n": 31,
+   "ids": []
+  },
+  "over_triage": {
+   "count": 3,
+   "n": 31,
+   "ids": [
+    "F_adult_hypertension_grade2",
+    "W_hypertension_grade2_mild_headache",
+    "X_hypertension_grade3_no_symptoms"
+   ]
+  },
+  "no_result": 0,
+  "errors": [],
+  "llm_errors": 2,
+  "latency_s": {
+   "median": 36.95,
+   "p95_nearest_rank": 52.557,
+   "min": 28.812,
+   "max": 85.156,
+   "n": 31
+  },
+  "tokens_per_triage": {
+   "median": 10891,
+   "p95_nearest_rank": 13968,
+   "total": 349750
+  },
+  "llm_calls_per_triage": {
+   "median": 5
+  },
+  "final_turn_latency_s": {
+   "median": 22.03,
+   "p95_nearest_rank": 41.572,
+   "n": 31
+  },
+  "priced_cost_per_triage_usd": {
+   "low_median": 0.013306,
+   "high_median": 0.021624,
+   "unpriced_models": [
+    "gemini-3.8-flash"
+   ],
+   "note": "low = reasoning tokens not billed; high = reasoning billed at output rate; total cost is unknown while any model is unpriced"
+  },
+  "confusion": {
+   "emergency": {
+    "emergency": 15
+   },
+   "urgent": {
+    "urgent": 5
+   },
+   "self_care": {
+    "self_care": 7
+   },
+   "standard": {
+    "urgent": 3,
+    "standard": 1
+   }
+  }
+ },
+ "results": [
+  {
+   "id": "A_severe_pneumonia",
+   "set": "baseline6",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: chest indrawing => SEVERE PNEUMONIA OR VERY SEVERE DISEASE, refer URGENTLY to hospital (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "chest indrawing"
+   ],
+   "completeness": 0.9,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Pneumonia or Very Severe Disease",
+     1.0
+    ]
+   ],
+   "guidelines_cited": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 34.196,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3807,
+     "output": 1299,
+     "reasoning": 1691,
+     "total": 6797,
+     "llm_s": 27.08
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2274,
+     "output": 691,
+     "reasoning": 717,
+     "total": 3682,
+     "llm_s": 10.407
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.749
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.295
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.63
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.059
+    ],
+    [
+     "relevance_check",
+     3.425
+    ],
+    [
+     "triage",
+     10.411
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.742,
+     "input_tokens": 850,
+     "output_tokens": 210,
+     "total_tokens": 1931,
+     "reasoning_tokens": 871
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.29,
+     "input_tokens": 921,
+     "output_tokens": 435,
+     "total_tokens": 1655,
+     "reasoning_tokens": 299
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.624,
+     "input_tokens": 999,
+     "output_tokens": 591,
+     "total_tokens": 1917,
+     "reasoning_tokens": 327
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.424,
+     "input_tokens": 1037,
+     "output_tokens": 63,
+     "total_tokens": 1294,
+     "reasoning_tokens": 194
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 10.407,
+     "input_tokens": 2274,
+     "output_tokens": 691,
+     "total_tokens": 3682,
+     "reasoning_tokens": 717
+    }
+   ],
+   "turn_times": [
+    9.783,
+    6.302,
+    18.111
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1192,
+    "wall_s": 8.621
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My 3 year old has had a cough for 4 days and seems to be breathing fast."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is still drinking and is not vomiting everything. He has had no convulsions, and he is alert."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 50 breaths per minute, and his lower chest does pull in when he breathes in. There is no harsh noise when he breathes."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, 3-year-old boy presenting with cough for 4 days, fast breathing, and chest indrawing.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Pneumonia or Very Severe Disease (100% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of an appropriate antibiotic per IMNCI protocol\n  2. Refer URGENTLY to the nearest hospital immediately\n  3. Keep the child warm and ensure the airway is clear during transport\n  4. Do not delay referral\n\nREFERRAL NOTE (for health facility):\n  3-year-old boy presenting with a 4-day history of cough, tachypnea (RR 50/min), and severe chest indrawing. Classified as Severe Pneumonia or Very Severe Disease per IMNCI guidelines. Requires urgent medical intervention.\n\nBASED ON:\n  \u2022 FAST BREATHING THRESHOLDS\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 CHEST INDRAWING DEFINITION\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "B_pneumonia_fast_breathing",
+   "set": "baseline6",
+   "expected": "urgent",
+   "predicted": "urgent",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: fast breathing (>=40/min age 1-5y) without danger signs => PNEUMONIA (yellow; state.py maps yellow to urgent)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Pneumonia",
+     0.95
+    ],
+    [
+     "Severe Pneumonia",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: FAST BREATHING THRESHOLDS BY AGE",
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 45.399,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3680,
+     "output": 1389,
+     "reasoning": 2158,
+     "total": 7227,
+     "llm_s": 34.188
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2050,
+     "output": 808,
+     "reasoning": 1444,
+     "total": 4302,
+     "llm_s": 14.615
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.407
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     15.881
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.351
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.075
+    ],
+    [
+     "relevance_check",
+     3.568
+    ],
+    [
+     "triage",
+     14.62
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.402,
+     "input_tokens": 852,
+     "output_tokens": 292,
+     "total_tokens": 1488,
+     "reasoning_tokens": 344
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 15.875,
+     "input_tokens": 932,
+     "output_tokens": 481,
+     "total_tokens": 2368,
+     "reasoning_tokens": 955
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.345,
+     "input_tokens": 1012,
+     "output_tokens": 558,
+     "total_tokens": 2202,
+     "reasoning_tokens": 632
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.566,
+     "input_tokens": 884,
+     "output_tokens": 58,
+     "total_tokens": 1169,
+     "reasoning_tokens": 227
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 14.615,
+     "input_tokens": 2050,
+     "output_tokens": 808,
+     "total_tokens": 4302,
+     "reasoning_tokens": 1444
+    }
+   ],
+   "turn_times": [
+    6.455,
+    15.887,
+    23.058
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1028,
+    "wall_s": 7.474
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My daughter is 3 and has had a cough for 3 days, she is breathing a bit quickly."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally, not vomiting, and has not had any convulsions. She is also alert and playful, not unusually sleepy or hard to wake."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 46 breaths in one minute while she was calm. Her chest is not pulling in, and there is no harsh noise when she breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, Three-year-old female presenting with cough for 3 days and fast breathing.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Pneumonia (95% confidence)\n  \u2022 Severe Pneumonia (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give an appropriate oral antibiotic for 5 days per IMNCI protocol\n  2. Advise the mother on home care and when to return immediately (e.g., if breathing becomes difficult, chest indrawing develops, or child is unable to drink)\n  3. Refer for same-day medical evaluation as per urgent classification guidelines\n  4. Follow up in 2 days to assess for improvement\n\nREFERRAL NOTE (for health facility):\n  3-year-old female presenting with cough for 3 days and fast breathing (RR 46/min). No chest indrawing, stridor, or general danger signs present. Classified as Pneumonia (IMNCI yellow). Referred for same-day evaluation and initiation of oral antibiotics.\n\nBASED ON:\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS BY AGE\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "C_cough_or_cold",
+   "set": "baseline6",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: no signs of pneumonia or very severe disease => NO PNEUMONIA: COUGH OR COLD (green)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.9,
+   "safety_override": false,
+   "suspected": [
+    [
+     "No Pneumonia: Cough or Cold",
+     0.95
+    ]
+   ],
+   "guidelines_cited": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 34.597,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3806,
+     "output": 1220,
+     "reasoning": 2293,
+     "total": 7319,
+     "llm_s": 29.104
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2260,
+     "output": 640,
+     "reasoning": 546,
+     "total": 3446,
+     "llm_s": 9.641
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.539
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.058
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.232
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.065
+    ],
+    [
+     "relevance_check",
+     4.295
+    ],
+    [
+     "triage",
+     9.644
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.534,
+     "input_tokens": 848,
+     "output_tokens": 289,
+     "total_tokens": 1453,
+     "reasoning_tokens": 316
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.052,
+     "input_tokens": 924,
+     "output_tokens": 365,
+     "total_tokens": 2126,
+     "reasoning_tokens": 837
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.224,
+     "input_tokens": 999,
+     "output_tokens": 495,
+     "total_tokens": 2377,
+     "reasoning_tokens": 883
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.294,
+     "input_tokens": 1035,
+     "output_tokens": 71,
+     "total_tokens": 1363,
+     "reasoning_tokens": 257
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.641,
+     "input_tokens": 2260,
+     "output_tokens": 640,
+     "total_tokens": 3446,
+     "reasoning_tokens": 546
+    }
+   ],
+   "turn_times": [
+    5.579,
+    9.064,
+    19.954
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1138,
+    "wall_s": 7.924
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "4 year old girl, mild cough for 2 days, no fever, eating fine."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally and has not had any vomiting or convulsions. She is also not unusually sleepy; she is active and alert."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 28 breaths in one minute. Her chest does not pull in, and there is no harsh noise when she breathes."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 4 years, Mild cough for 2 days in a 4-year-old child.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 No Pneumonia: Cough or Cold (95% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise mother on home care for cough or cold.\n  2. Soothe the throat and relieve the cough with a safe, appropriate home remedy.\n  3. Advise mother when to return immediately (if breathing becomes fast, difficult, or child is unable to drink).\n  4. Follow up in 5 days if not improving.\n\nBASED ON:\n  \u2022 FAST BREATHING THRESHOLDS\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "D_severe_dehydration",
+   "set": "baseline6",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: >=2 of lethargic, sunken eyes, drinking poorly, slow skin pinch => SEVERE DEHYDRATION, refer URGENTLY (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 1,
+   "confidence": 0.874,
+   "red_flags": [
+    "altered consciousness",
+    "lethargic",
+    "severe dehydration"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Dehydration",
+     1.0
+    ],
+    [
+     "Very Severe Disease",
+     0.9
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY DIARRHOEA",
+    "IMNCI: GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 5,
+   "system_wall_s": 85.156,
+   "llm_calls": 15,
+   "llm_errors": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "error": "Error code: 400",
+     "error_body": "[{'error': {'code': 400, 'message': 'Requests ending with a model turn are not supported.', 'status': 'INVALID_ARGUMENT'}}]",
+     "latency_s": 0.219
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "error": "Error code: 400",
+     "error_body": "[{'error': {'code': 400, 'message': 'Requests ending with a model turn are not supported.', 'status': 'INVALID_ARGUMENT'}}]",
+     "latency_s": 0.193
+    }
+   ],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 11,
+     "input": 9433,
+     "output": 3256,
+     "reasoning": 4755,
+     "total": 17444,
+     "llm_s": 71.323
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 2,
+     "input": 4942,
+     "output": 1494,
+     "reasoning": 1341,
+     "total": 7777,
+     "llm_s": 22.764
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.987
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.002
+    ],
+    [
+     "intake",
+     7.833
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.953
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.063
+    ],
+    [
+     "relevance_check",
+     4.579
+    ],
+    [
+     "triage",
+     11.537
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.022
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     15.179
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     12.232
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.939
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.07
+    ],
+    [
+     "relevance_check",
+     5.061
+    ],
+    [
+     "triage",
+     11.236
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.982,
+     "input_tokens": 848,
+     "output_tokens": 262,
+     "total_tokens": 1479,
+     "reasoning_tokens": 369
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.823,
+     "input_tokens": 926,
+     "output_tokens": 451,
+     "total_tokens": 1889,
+     "reasoning_tokens": 512
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.945,
+     "input_tokens": 1020,
+     "output_tokens": 587,
+     "total_tokens": 1966,
+     "reasoning_tokens": 359
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.578,
+     "input_tokens": 1055,
+     "output_tokens": 93,
+     "total_tokens": 1432,
+     "reasoning_tokens": 284
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.533,
+     "input_tokens": 2571,
+     "output_tokens": 753,
+     "total_tokens": 4029,
+     "reasoning_tokens": 705
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "error": "Error code: 400",
+     "error_body": "[{'error': {'code': 400, 'message': 'Requests ending with a model turn are not supported.', 'status': 'INVALID_ARGUMENT'}}]",
+     "latency_s": 0.219
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "error": "Error code: 400",
+     "error_body": "[{'error': {'code': 400, 'message': 'Requests ending with a model turn are not supported.', 'status': 'INVALID_ARGUMENT'}}]",
+     "latency_s": 0.193
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.603,
+     "input_tokens": 386,
+     "output_tokens": 16,
+     "total_tokens": 821,
+     "reasoning_tokens": 419
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 11.373,
+     "input_tokens": 1065,
+     "output_tokens": 554,
+     "total_tokens": 2669,
+     "reasoning_tokens": 1050
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 3.801,
+     "input_tokens": 412,
+     "output_tokens": 9,
+     "total_tokens": 714,
+     "reasoning_tokens": 293
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.112,
+     "input_tokens": 1092,
+     "output_tokens": 561,
+     "total_tokens": 1954,
+     "reasoning_tokens": 301
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.112,
+     "input_tokens": 445,
+     "output_tokens": 15,
+     "total_tokens": 849,
+     "reasoning_tokens": 389
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.934,
+     "input_tokens": 1120,
+     "output_tokens": 631,
+     "total_tokens": 2147,
+     "reasoning_tokens": 396
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.06,
+     "input_tokens": 1064,
+     "output_tokens": 77,
+     "total_tokens": 1524,
+     "reasoning_tokens": 383
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.231,
+     "input_tokens": 2371,
+     "output_tokens": 741,
+     "total_tokens": 3748,
+     "reasoning_tokens": 636
+    }
+   ],
+   "turn_times": [
+    6.042,
+    7.843,
+    24.588,
+    15.187,
+    12.24,
+    19.256
+   ],
+   "caregiver": {
+    "calls": 5,
+    "total_tokens": 2693,
+    "wall_s": 20.609
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "2 year old boy, diarrhea for 3 days, not sure if he can drink."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He drinks very poorly, has had no convulsions, and he is very sleepy and hard to wake. I haven't noticed any vomiting."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "Yes, his eyes look sunken, the skin pinch goes back very slowly, and he drinks very poorly. I haven't noticed him being restless or irritable, but he is very sleepy and hard to wake."
+    ],
+    [
+     "intake",
+     "Does the skin on his belly go back immediately like normal when you pinch it?"
+    ],
+    [
+     "caregiver",
+     "No, it goes back very slowly."
+    ],
+    [
+     "intake",
+     "Is the child alert and active right now?"
+    ],
+    [
+     "caregiver",
+     "No, he is not alert. He is very sleepy and hard to wake."
+    ],
+    [
+     "intake",
+     "Is the child completely unable to drink or breastfeed at all right now?"
+    ],
+    [
+     "caregiver",
+     "He drinks very poorly when it is offered to him."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, A 2-year-old boy presents with diarrhea for 3 days, poor drinking, and excessive sleepiness.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Dehydration (100% confidence)\n  \u2022 Very Severe Disease (90% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Begin treatment for severe dehydration (Plan C) immediately if trained, or give frequent sips of ORS on the way to the hospital\n  2. Refer URGENTLY to the nearest hospital\n  3. Keep the child warm and continue to offer breastmilk or ORS during transport if the child can swallow\n\nREFERRAL NOTE (for health facility):\n  2-year-old boy presenting with 3 days of severe diarrhea. Classified as SEVERE DEHYDRATION and has a general danger sign (lethargic). Signs include sunken eyes, very slow skin pinch, and poor drinking. Needs immediate medical attention and IV fluids (Plan C).\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY DIARRHOEA\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  skin pinch slow, drinks eagerly\n\nAssessment confidence: High (87%)\n=================================================="
+  },
+  {
+   "id": "E_convulsions",
+   "set": "baseline6",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: more than one convulsion in this illness = general danger sign; fever + danger sign => VERY SEVERE FEBRILE DISEASE, refer URGENTLY (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.828,
+   "red_flags": [
+    "convulsions",
+    "lethargic"
+   ],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Very Severe Febrile Disease",
+     0.95
+    ],
+    [
+     "Meningitis / Encephalitis",
+     0.85
+    ],
+    [
+     "Severe Malaria",
+     0.75
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: GENERAL DANGER SIGNS",
+    "IMNCI: ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 36.985,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3780,
+     "output": 1488,
+     "reasoning": 1857,
+     "total": 7125,
+     "llm_s": 29.502
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2285,
+     "output": 757,
+     "reasoning": 724,
+     "total": 3766,
+     "llm_s": 11.631
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.056
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.888
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.318
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.061
+    ],
+    [
+     "relevance_check",
+     4.264
+    ],
+    [
+     "triage",
+     11.635
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.049,
+     "input_tokens": 846,
+     "output_tokens": 393,
+     "total_tokens": 1572,
+     "reasoning_tokens": 333
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.883,
+     "input_tokens": 928,
+     "output_tokens": 467,
+     "total_tokens": 1879,
+     "reasoning_tokens": 484
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.306,
+     "input_tokens": 949,
+     "output_tokens": 558,
+     "total_tokens": 2249,
+     "reasoning_tokens": 742
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.264,
+     "input_tokens": 1057,
+     "output_tokens": 70,
+     "total_tokens": 1425,
+     "reasoning_tokens": 298
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.631,
+     "input_tokens": 2285,
+     "output_tokens": 757,
+     "total_tokens": 3766,
+     "reasoning_tokens": 724
+    }
+   ],
+   "turn_times": [
+    7.062,
+    7.894,
+    22.028
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1210,
+    "wall_s": 8.701
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My 18 month old has a high fever and had two fits today."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is able to drink a little and is not vomiting everything. She had two fits today that lasted about two minutes each, and she is drowsy now."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "I haven't noticed her having a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 18 months, 18-month-old female presenting with high fever, drowsiness, and two episodes of convulsions today.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Very Severe Febrile Disease (95% confidence)\n  \u2022 Meningitis / Encephalitis (85% confidence)\n  \u2022 Severe Malaria (75% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of diazepam if the child is convulsing now\n  2. Give first dose of appropriate antibiotic per protocol\n  3. Treat the child to prevent low blood sugar\n  4. Give one dose of paracetamol in clinic for high fever\n  5. Refer URGENTLY to hospital\n\nREFERRAL NOTE (for health facility):\n  18-month-old female presenting with high fever, two episodes of convulsions today, and lethargy. Classified as Very Severe Febrile Disease with IMNCI general danger signs. Requires immediate medical intervention.\n\nBASED ON:\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n  \u2022 IMNCI: ASSESS AND CLASSIFY FEVER\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  stiff neck\n\nAssessment confidence: High (83%)\n=================================================="
+  },
+  {
+   "id": "F_adult_hypertension_grade2",
+   "set": "baseline6",
+   "expected": "standard",
+   "predicted": "urgent",
+   "correct": false,
+   "under_triage": false,
+   "over_triage": true,
+   "basis": "WHO PEN sample: BP 160/100 = Grade 2 without emergency features => refer to physician within 24-48 hours",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Grade 2 Hypertension",
+     0.95
+    ],
+    [
+     "Primary Headache",
+     0.8
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT",
+    "WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 38.568,
+   "llm_calls": 4,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 3,
+     "input": 2452,
+     "output": 631,
+     "reasoning": 1420,
+     "total": 4503,
+     "llm_s": 19.655
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 1615,
+     "output": 853,
+     "reasoning": 2242,
+     "total": 4710,
+     "llm_s": 22.457
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.04
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.052
+    ],
+    [
+     "relevance_check",
+     3.627
+    ],
+    [
+     "triage",
+     22.46
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.034,
+     "input_tokens": 853,
+     "output_tokens": 294,
+     "total_tokens": 1641,
+     "reasoning_tokens": 494
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.995,
+     "input_tokens": 940,
+     "output_tokens": 280,
+     "total_tokens": 1941,
+     "reasoning_tokens": 721
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.626,
+     "input_tokens": 659,
+     "output_tokens": 57,
+     "total_tokens": 921,
+     "reasoning_tokens": 205
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 22.457,
+     "input_tokens": 1615,
+     "output_tokens": 853,
+     "total_tokens": 4710,
+     "reasoning_tokens": 2242
+    }
+   ],
+   "turn_times": [
+    8.045,
+    30.523
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 733,
+    "wall_s": 5.106
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "55 year old man, headache for one week, measured blood pressure 160/100."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "He does not have any chest pain, vision problems, weakness, numbness, confusion, or seizures. I haven't noticed any difficulty breathing, trouble speaking, or heavy bleeding."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 55 years, 55-year-old man presenting with headache for one week and elevated blood pressure of 160/100 mmHg.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Grade 2 Hypertension (95% confidence)\n  \u2022 Primary Headache (80% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Refer to a physician for evaluation and initiation of antihypertensive treatment within 24-48 hours.\n  2. Advise the patient to seek immediate emergency care if they develop chest pain, visual disturbances, weakness, or confusion.\n  3. Perform diabetes screening (fasting blood glucose or HbA1c) at the health facility due to age >= 45 and hypertension.\n\nREFERRAL NOTE (for health facility):\n  55-year-old male presenting with a 1-week history of moderate headache and elevated blood pressure of 160/100 mmHg. No red flag signs of hypertensive emergency (no chest pain, visual disturbances, or neurological deficits). Referred for physician evaluation and treatment initiation for Grade 2 Hypertension within 24-48 hours, and for diabetes screening.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n  \u2022 WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "G_infant_pneumonia_rr54",
+   "set": "extended",
+   "expected": "urgent",
+   "predicted": "urgent",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: fast breathing for age 2-12 months is >=50/min => PNEUMONIA (yellow -> urgent)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.9,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Pneumonia",
+     0.95
+    ],
+    [
+     "Severe Pneumonia",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: FAST BREATHING THRESHOLDS",
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 37.755,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3810,
+     "output": 1229,
+     "reasoning": 2460,
+     "total": 7499,
+     "llm_s": 31.251
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2308,
+     "output": 757,
+     "reasoning": 959,
+     "total": 4024,
+     "llm_s": 12.29
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.617
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.737
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     11.011
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.071
+    ],
+    [
+     "relevance_check",
+     5.904
+    ],
+    [
+     "triage",
+     12.294
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.612,
+     "input_tokens": 845,
+     "output_tokens": 227,
+     "total_tokens": 1305,
+     "reasoning_tokens": 233
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.731,
+     "input_tokens": 922,
+     "output_tokens": 370,
+     "total_tokens": 2049,
+     "reasoning_tokens": 757
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 11.005,
+     "input_tokens": 1002,
+     "output_tokens": 560,
+     "total_tokens": 2568,
+     "reasoning_tokens": 1006
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.903,
+     "input_tokens": 1041,
+     "output_tokens": 72,
+     "total_tokens": 1577,
+     "reasoning_tokens": 464
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 12.29,
+     "input_tokens": 2308,
+     "output_tokens": 757,
+     "total_tokens": 4024,
+     "reasoning_tokens": 959
+    }
+   ],
+   "turn_times": [
+    5.622,
+    8.743,
+    23.389
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1108,
+    "wall_s": 8.798
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My 8 month old son has had a cough for 3 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is drinking and breastfeeding normally, and he is not vomiting everything. He has had no fits, and he is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 54 breaths in one minute while he was calm. His chest does not pull in, and there is no harsh noise when he breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 8 months, 8-month-old male presenting with cough for 3 days and fast breathing.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Pneumonia (95% confidence)\n  \u2022 Severe Pneumonia (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give an appropriate oral antibiotic for 5 days per protocol.\n  2. Refer for same-day evaluation at the nearest health facility.\n  3. Advise the mother to keep the child warm and continue breastfeeding/feeding.\n  4. Advise the mother to return immediately if the child develops chest indrawing, stridor, or becomes unable to drink.\n\nREFERRAL NOTE (for health facility):\n  8-month-old male presenting with cough for 3 days and fast breathing (RR 54/min). No chest indrawing or general danger signs present. Classified as Pneumonia. Referred for same-day evaluation and management.\n\nBASED ON:\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "H_infant_cough_rr46_not_fast",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: 46/min is below the 2-12 month threshold of 50 and no other sign => NO PNEUMONIA: COUGH OR COLD (green)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "No Pneumonia: Cough or Cold",
+     0.95
+    ],
+    [
+     "Pneumonia",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 32.623,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3804,
+     "output": 1195,
+     "reasoning": 1531,
+     "total": 6530,
+     "llm_s": 25.155
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2285,
+     "output": 745,
+     "reasoning": 658,
+     "total": 3688,
+     "llm_s": 11.223
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     4.252
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.816
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.25
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.056
+    ],
+    [
+     "relevance_check",
+     3.859
+    ],
+    [
+     "triage",
+     11.226
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.244,
+     "input_tokens": 845,
+     "output_tokens": 163,
+     "total_tokens": 1249,
+     "reasoning_tokens": 241
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.808,
+     "input_tokens": 920,
+     "output_tokens": 422,
+     "total_tokens": 1907,
+     "reasoning_tokens": 565
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.245,
+     "input_tokens": 999,
+     "output_tokens": 529,
+     "total_tokens": 2018,
+     "reasoning_tokens": 490
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.858,
+     "input_tokens": 1040,
+     "output_tokens": 81,
+     "total_tokens": 1356,
+     "reasoning_tokens": 235
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.223,
+     "input_tokens": 2285,
+     "output_tokens": 745,
+     "total_tokens": 3688,
+     "reasoning_tokens": 658
+    }
+   ],
+   "turn_times": [
+    4.258,
+    8.822,
+    19.543
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1252,
+    "wall_s": 9.905
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "8 month old girl with a cough and runny nose for 2 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking and breastfeeding normally, and she is not vomiting everything. She has had no convulsions and is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 46 breaths per minute while she was calm. Her chest does not pull in, and there is no harsh noise when she breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 8 months, 8-month-old girl presenting with cough and runny nose for 2 days.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 No Pneumonia: Cough or Cold (95% confidence)\n  \u2022 Pneumonia (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise the mother on home care for cough and cold.\n  2. Soothe the throat and relieve the cough with a safe, age-appropriate remedy.\n  3. Advise the mother when to return immediately (if breathing becomes fast or difficult, child becomes sicker, or is unable to drink).\n  4. Advise to return for follow-up in 5 days if not improving.\n\nBASED ON:\n  \u2022 FAST BREATHING THRESHOLDS\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "I_stridor_when_calm",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: stridor in a calm child => SEVERE PNEUMONIA OR VERY SEVERE DISEASE (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "stridor when calm"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Pneumonia or Very Severe Disease",
+     0.95
+    ],
+    [
+     "Croup (Viral Laryngotracheobronchitis)",
+     0.8
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "IMNCI: FAST BREATHING THRESHOLDS BY AGE"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 34.145,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3814,
+     "output": 1367,
+     "reasoning": 1664,
+     "total": 6845,
+     "llm_s": 29.495
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2296,
+     "output": 601,
+     "reasoning": 587,
+     "total": 3484,
+     "llm_s": 9.535
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.395
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.793
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.342
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.052
+    ],
+    [
+     "relevance_check",
+     4.983
+    ],
+    [
+     "triage",
+     9.538
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.39,
+     "input_tokens": 846,
+     "output_tokens": 312,
+     "total_tokens": 1732,
+     "reasoning_tokens": 574
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.786,
+     "input_tokens": 921,
+     "output_tokens": 425,
+     "total_tokens": 1765,
+     "reasoning_tokens": 419
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.337,
+     "input_tokens": 1005,
+     "output_tokens": 556,
+     "total_tokens": 1841,
+     "reasoning_tokens": 280
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.982,
+     "input_tokens": 1042,
+     "output_tokens": 74,
+     "total_tokens": 1507,
+     "reasoning_tokens": 391
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.535,
+     "input_tokens": 2296,
+     "output_tokens": 601,
+     "total_tokens": 3484,
+     "reasoning_tokens": 587
+    }
+   ],
+   "turn_times": [
+    8.402,
+    9.799,
+    15.943
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1135,
+    "wall_s": 7.865
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My 2 year old has a cough and makes a strange noise when breathing."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is drinking normally and is not vomiting everything. He hasn't had any convulsions, and he is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 38 breaths in one minute, and his lower chest is not pulling in. Yes, he makes a harsh noise every time he breathes in, even while calm."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, 2-year-old child presenting with cough and harsh breathing noise when calm.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Pneumonia or Very Severe Disease (95% confidence)\n  \u2022 Croup (Viral Laryngotracheobronchitis) (80% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of an appropriate antibiotic per protocol\n  2. Keep the child calm and avoid unnecessary distress\n  3. Refer URGENTLY to hospital immediately\n\nREFERRAL NOTE (for health facility):\n  2-year-old male presenting with cough and stridor when calm. RR 38/min (no fast breathing for age). Classified as Severe Pneumonia or Very Severe Disease per IMNCI guidelines due to stridor at rest. Requires urgent medical evaluation and airway management.\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS BY AGE\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "J_toddler_cough_rr38",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: 38/min is below the 12 month-5 year threshold of 40, no danger sign => COUGH OR COLD (green)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "No Pneumonia: Cough or Cold",
+     0.95
+    ],
+    [
+     "Pneumonia",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: FAST BREATHING THRESHOLDS BY AGE",
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "IMNCI: GENERAL DANGER SIGNS",
+    "IMNCI: CHEST INDRAWING DEFINITION"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 28.812,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3787,
+     "output": 1015,
+     "reasoning": 1260,
+     "total": 6062,
+     "llm_s": 22.903
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2176,
+     "output": 745,
+     "reasoning": 667,
+     "total": 3588,
+     "llm_s": 11.253
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.544
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     2.947
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.977
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.065
+    ],
+    [
+     "relevance_check",
+     5.453
+    ],
+    [
+     "triage",
+     11.256
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.537,
+     "input_tokens": 842,
+     "output_tokens": 220,
+     "total_tokens": 1443,
+     "reasoning_tokens": 381
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 2.942,
+     "input_tokens": 922,
+     "output_tokens": 211,
+     "total_tokens": 1133,
+     "reasoning_tokens": 0
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.972,
+     "input_tokens": 1001,
+     "output_tokens": 498,
+     "total_tokens": 2095,
+     "reasoning_tokens": 596
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.452,
+     "input_tokens": 1022,
+     "output_tokens": 86,
+     "total_tokens": 1391,
+     "reasoning_tokens": 283
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.253,
+     "input_tokens": 2176,
+     "output_tokens": 745,
+     "total_tokens": 3588,
+     "reasoning_tokens": 667
+    }
+   ],
+   "turn_times": [
+    6.55,
+    2.952,
+    19.309
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1239,
+    "wall_s": 8.871
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "18 month old with a cough for 2 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally, is not vomiting everything, and has had no fits. She is alert and active, not unusually sleepy or hard to wake."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 38 breaths per minute while she was calm. Her chest is not pulling in, and there is no harsh noise when she breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 18 months, 18-month-old child presenting with a cough for 2 days.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 No Pneumonia: Cough or Cold (95% confidence)\n  \u2022 Pneumonia (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise the mother on home care for cough or cold.\n  2. Soothe the throat and relieve the cough with a safe, age-appropriate remedy.\n  3. Advise the mother when to return immediately (if breathing becomes fast, difficult, child becomes sicker, or is unable to drink).\n  4. Advise to return for follow-up in 5 days if not improving.\n\nBASED ON:\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS BY AGE\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n  \u2022 IMNCI: CHEST INDRAWING DEFINITION\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "K_chest_indrawing_lay_terms",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: chest indrawing => SEVERE PNEUMONIA OR VERY SEVERE DISEASE, refer urgently (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "chest indrawing"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Pneumonia or Very Severe Disease",
+     1.0
+    ]
+   ],
+   "guidelines_cited": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 36.243,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3802,
+     "output": 1313,
+     "reasoning": 2373,
+     "total": 7488,
+     "llm_s": 31.636
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2514,
+     "output": 633,
+     "reasoning": 722,
+     "total": 3869,
+     "llm_s": 9.697
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.114
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     3.937
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     13.406
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.061
+    ],
+    [
+     "relevance_check",
+     5.199
+    ],
+    [
+     "triage",
+     9.702
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.109,
+     "input_tokens": 844,
+     "output_tokens": 166,
+     "total_tokens": 1796,
+     "reasoning_tokens": 786
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 3.929,
+     "input_tokens": 918,
+     "output_tokens": 459,
+     "total_tokens": 1377,
+     "reasoning_tokens": 0
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 13.4,
+     "input_tokens": 1002,
+     "output_tokens": 628,
+     "total_tokens": 2789,
+     "reasoning_tokens": 1159
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.198,
+     "input_tokens": 1038,
+     "output_tokens": 60,
+     "total_tokens": 1526,
+     "reasoning_tokens": 428
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.697,
+     "input_tokens": 2514,
+     "output_tokens": 633,
+     "total_tokens": 3869,
+     "reasoning_tokens": 722
+    }
+   ],
+   "turn_times": [
+    9.12,
+    3.944,
+    23.18
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1395,
+    "wall_s": 11.419
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "4 year old with cough, his chest sucks in when he breathes."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is drinking normally and is not vomiting everything. He has not had any convulsions, and he is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 44 breaths in one minute, and the lower part of his chest does suck in every time he breathes in. There is no harsh noise when he breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 4 years, 4-year-old boy with cough and chest indrawing.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Pneumonia or Very Severe Disease (100% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of an appropriate antibiotic per protocol\n  2. Refer URGENTLY to hospital immediately\n  3. Keep the child warm and ensure airway is clear during transport\n\nREFERRAL NOTE (for health facility):\n  4-year-old boy presenting with severe cough, fast breathing (RR 44/min), and severe chest indrawing. Classified as Severe Pneumonia or Very Severe Disease per IMNCI guidelines. Requires urgent assessment and management.\n\nBASED ON:\n  \u2022 FAST BREATHING THRESHOLDS\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 CHEST INDRAWING DEFINITION\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "L_fast_breathing_unable_to_drink",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: not able to drink = general danger sign => refer to hospital (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "unable to drink"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Pneumonia or Very Severe Disease",
+     0.95
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: FAST BREATHING THRESHOLDS BY AGE",
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "IMNCI: GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "ASSESS AND CLASSIFY FEVER",
+    "CHEST INDRAWING DEFINITION"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 36.021,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3805,
+     "output": 1253,
+     "reasoning": 2343,
+     "total": 7401,
+     "llm_s": 30.483
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2513,
+     "output": 690,
+     "reasoning": 703,
+     "total": 3906,
+     "llm_s": 10.526
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.536
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.058
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.82
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.056
+    ],
+    [
+     "relevance_check",
+     5.087
+    ],
+    [
+     "triage",
+     10.529
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.531,
+     "input_tokens": 839,
+     "output_tokens": 152,
+     "total_tokens": 1691,
+     "reasoning_tokens": 700
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.052,
+     "input_tokens": 918,
+     "output_tokens": 436,
+     "total_tokens": 1752,
+     "reasoning_tokens": 398
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.814,
+     "input_tokens": 994,
+     "output_tokens": 595,
+     "total_tokens": 2453,
+     "reasoning_tokens": 864
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.086,
+     "input_tokens": 1054,
+     "output_tokens": 70,
+     "total_tokens": 1505,
+     "reasoning_tokens": 381
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 10.526,
+     "input_tokens": 2513,
+     "output_tokens": 690,
+     "total_tokens": 3906,
+     "reasoning_tokens": 703
+    }
+   ],
+   "turn_times": [
+    8.542,
+    7.064,
+    20.415
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1109,
+    "wall_s": 7.971
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "3 year old with cough and fast breathing."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She cannot drink anything at all and refuses every sip, but she is not vomiting. She has not had any convulsions and is awake and alert."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 42 breaths in one minute. Her chest is not pulling in, and there is no harsh noise when she breathes in."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, 3-year-old female presenting with cough, fast breathing, and inability to drink.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Pneumonia or Very Severe Disease (95% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of an appropriate antibiotic per protocol.\n  2. Refer URGENTLY to the nearest hospital.\n  3. Keep the child warm and prevent low blood sugar during transport.\n\nREFERRAL NOTE (for health facility):\n  3-year-old female presenting with cough and fast breathing (RR 42/min). Classified as Severe Pneumonia or Very Severe Disease due to the presence of a general danger sign (unable to drink). First dose of appropriate antibiotic given. Urgent referral for further management.\n\nBASED ON:\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS BY AGE\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "M_vomits_everything",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: vomits everything = general danger sign (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.874,
+   "red_flags": [
+    "vomits everything"
+   ],
+   "completeness": 0.7,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Very Severe Febrile Disease",
+     0.95
+    ],
+    [
+     "Severe Dehydration",
+     0.6
+    ]
+   ],
+   "guidelines_cited": [
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 33.262,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3742,
+     "output": 1252,
+     "reasoning": 1634,
+     "total": 6628,
+     "llm_s": 28.437
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2229,
+     "output": 704,
+     "reasoning": 579,
+     "total": 3512,
+     "llm_s": 9.745
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.942
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.163
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.329
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.055
+    ],
+    [
+     "relevance_check",
+     5.019
+    ],
+    [
+     "triage",
+     9.748
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.936,
+     "input_tokens": 842,
+     "output_tokens": 439,
+     "total_tokens": 1834,
+     "reasoning_tokens": 553
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.158,
+     "input_tokens": 919,
+     "output_tokens": 369,
+     "total_tokens": 1564,
+     "reasoning_tokens": 276
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.324,
+     "input_tokens": 939,
+     "output_tokens": 388,
+     "total_tokens": 1764,
+     "reasoning_tokens": 437
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.019,
+     "input_tokens": 1042,
+     "output_tokens": 56,
+     "total_tokens": 1466,
+     "reasoning_tokens": 368
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.745,
+     "input_tokens": 2229,
+     "output_tokens": 704,
+     "total_tokens": 3512,
+     "reasoning_tokens": 579
+    }
+   ],
+   "turn_times": [
+    9.947,
+    6.17,
+    17.144
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 986,
+    "wall_s": 7.305
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "My 2 year old has a fever and keeps vomiting."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He vomits everything every time he tries to eat or drink. He has not had any convulsions, and he is awake and alert."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, he does not have a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, Two-year-old child presenting with fever and vomiting everything.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Very Severe Febrile Disease (95% confidence)\n  \u2022 Severe Dehydration (60% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of appropriate antibiotic per protocol\n  2. Treat the child to prevent low blood sugar\n  3. Give one dose of paracetamol in clinic for high fever\n  4. Refer URGENTLY to hospital\n\nREFERRAL NOTE (for health facility):\n  2-year-old male presenting with fever and vomiting everything (IMNCI general danger sign). Classified as Very Severe Febrile Disease. Pre-referral treatment initiated. Requires urgent evaluation and management.\n\nBASED ON:\n  \u2022 GENERAL DANGER SIGNS\n  \u2022 ASSESS AND CLASSIFY FEVER\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  unable to drink or breastfeed\n\nAssessment confidence: High (87%)\n=================================================="
+  },
+  {
+   "id": "N_unable_to_breastfeed",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: not able to breastfeed = general danger sign (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "unable to breastfeed",
+    "unable to drink"
+   ],
+   "completeness": 0.72,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Very Severe Febrile Disease",
+     0.95
+    ],
+    [
+     "Severe Dehydration",
+     0.4
+    ],
+    [
+     "Severe Pneumonia or Very Severe Disease",
+     0.3
+    ]
+   ],
+   "guidelines_cited": [
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "GENERAL DANGER SIGNS",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 41.066,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3759,
+     "output": 1054,
+     "reasoning": 2755,
+     "total": 7568,
+     "llm_s": 33.541
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2263,
+     "output": 759,
+     "reasoning": 665,
+     "total": 3687,
+     "llm_s": 11.493
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.485
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.519
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.495
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.049
+    ],
+    [
+     "relevance_check",
+     4.059
+    ],
+    [
+     "triage",
+     11.497
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.479,
+     "input_tokens": 841,
+     "output_tokens": 326,
+     "total_tokens": 1788,
+     "reasoning_tokens": 621
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.514,
+     "input_tokens": 922,
+     "output_tokens": 227,
+     "total_tokens": 2224,
+     "reasoning_tokens": 1075
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.489,
+     "input_tokens": 942,
+     "output_tokens": 439,
+     "total_tokens": 2184,
+     "reasoning_tokens": 803
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.059,
+     "input_tokens": 1054,
+     "output_tokens": 62,
+     "total_tokens": 1372,
+     "reasoning_tokens": 256
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.493,
+     "input_tokens": 2263,
+     "output_tokens": 759,
+     "total_tokens": 3687,
+     "reasoning_tokens": 665
+    }
+   ],
+   "turn_times": [
+    8.49,
+    10.525,
+    22.051
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1022,
+    "wall_s": 7.35
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "10 month old baby with fever, not feeding."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is not able to breastfeed at all and will not suck, but she is not vomiting everything. She has not had any convulsions and is awake."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, she does not have a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 10 months, 10-month-old infant presenting with fever and inability to breastfeed.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Very Severe Febrile Disease (95% confidence)\n  \u2022 Severe Dehydration (40% confidence)\n  \u2022 Severe Pneumonia or Very Severe Disease (30% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of appropriate antibiotic per IMNCI protocol\n  2. Treat the child to prevent low blood sugar\n  3. Give one dose of paracetamol in clinic for high fever\n  4. Refer URGENTLY to hospital\n\nREFERRAL NOTE (for health facility):\n  10-month-old female presenting with fever and inability to breastfeed/drink (IMNCI general danger sign). Classified as Very Severe Febrile Disease. Requires urgent medical evaluation and management.\n\nBASED ON:\n  \u2022 GENERAL DANGER SIGNS\n  \u2022 ASSESS AND CLASSIFY FEVER\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "O_lethargic_fever",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: lethargic or unconscious = general danger sign (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "altered consciousness",
+    "lethargic"
+   ],
+   "completeness": 0.75,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Very Severe Febrile Disease",
+     0.95
+    ],
+    [
+     "Severe Dehydration",
+     0.4
+    ]
+   ],
+   "guidelines_cited": [
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY FEVER",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 35.256,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3779,
+     "output": 1229,
+     "reasoning": 2374,
+     "total": 7382,
+     "llm_s": 29.238
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2308,
+     "output": 708,
+     "reasoning": 684,
+     "total": 3700,
+     "llm_s": 11.029
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.559
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.165
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.405
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.065
+    ],
+    [
+     "relevance_check",
+     5.135
+    ],
+    [
+     "triage",
+     11.04
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.554,
+     "input_tokens": 843,
+     "output_tokens": 337,
+     "total_tokens": 1487,
+     "reasoning_tokens": 307
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.16,
+     "input_tokens": 930,
+     "output_tokens": 231,
+     "total_tokens": 2136,
+     "reasoning_tokens": 975
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.39,
+     "input_tokens": 951,
+     "output_tokens": 600,
+     "total_tokens": 2218,
+     "reasoning_tokens": 667
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.134,
+     "input_tokens": 1055,
+     "output_tokens": 61,
+     "total_tokens": 1541,
+     "reasoning_tokens": 425
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.029,
+     "input_tokens": 2308,
+     "output_tokens": 708,
+     "total_tokens": 3700,
+     "reasoning_tokens": 684
+    }
+   ],
+   "turn_times": [
+    5.564,
+    9.171,
+    20.521
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1093,
+    "wall_s": 8.317
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "3 year old with fever for 2 days, very sleepy."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He drinks a little when woken, and he has had no convulsions and is not vomiting everything. He is very sleepy, hard to wake, and does not look at you when awake."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, I haven't noticed a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, Three-year-old boy presenting with fever for 2 days and severe lethargy.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Very Severe Febrile Disease (95% confidence)\n  \u2022 Severe Dehydration (40% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of appropriate antibiotic per IMNCI protocol.\n  2. Treat the child to prevent low blood sugar.\n  3. Give one dose of paracetamol for high fever.\n  4. Refer URGENTLY to the nearest hospital.\n\nREFERRAL NOTE (for health facility):\n  3-year-old boy presenting with 2 days of fever, severe lethargy, and poor oral intake. Classified as Very Severe Febrile Disease due to the presence of a general danger sign (lethargic/altered consciousness). Requires urgent evaluation and management.\n\nBASED ON:\n  \u2022 GENERAL DANGER SIGNS\n  \u2022 ASSESS AND CLASSIFY FEVER\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "P_some_dehydration",
+   "set": "extended",
+   "expected": "urgent",
+   "predicted": "urgent",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: two of restless/irritable, sunken eyes, drinks eagerly, skin pinch slowly => SOME DEHYDRATION (yellow -> urgent)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Some Dehydration",
+     0.95
+    ],
+    [
+     "Severe Dehydration",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY DIARRHOEA",
+    "IMNCI: GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "FAST BREATHING THRESHOLDS",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 43.509,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3841,
+     "output": 1368,
+     "reasoning": 2649,
+     "total": 7858,
+     "llm_s": 33.433
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2279,
+     "output": 734,
+     "reasoning": 1373,
+     "total": 4386,
+     "llm_s": 15.709
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.252
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.472
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.993
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.053
+    ],
+    [
+     "relevance_check",
+     5.739
+    ],
+    [
+     "triage",
+     15.713
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.247,
+     "input_tokens": 841,
+     "output_tokens": 231,
+     "total_tokens": 1850,
+     "reasoning_tokens": 778
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.464,
+     "input_tokens": 934,
+     "output_tokens": 508,
+     "total_tokens": 2329,
+     "reasoning_tokens": 887
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.984,
+     "input_tokens": 1018,
+     "output_tokens": 533,
+     "total_tokens": 2161,
+     "reasoning_tokens": 610
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.738,
+     "input_tokens": 1048,
+     "output_tokens": 96,
+     "total_tokens": 1518,
+     "reasoning_tokens": 374
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 15.709,
+     "input_tokens": 2279,
+     "output_tokens": 734,
+     "total_tokens": 4386,
+     "reasoning_tokens": 1373
+    }
+   ],
+   "turn_times": [
+    8.258,
+    10.479,
+    24.772
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1273,
+    "wall_s": 9.624
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "18 month old with diarrhoea for 2 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is able to drink eagerly and is very thirsty, and she is not vomiting everything. She hasn't had any convulsions, and she is not unusually sleepy or hard to wake\u2014she is restless and irritable."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "Her eyes are not sunken, and the skin on her belly goes back slowly. She is restless and irritable, and she drinks eagerly because she is very thirsty."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 18 months, 18-month-old female with diarrhea for 2 days, presenting with restlessness and eager drinking.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Some Dehydration (95% confidence)\n  \u2022 Severe Dehydration (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Begin oral rehydration therapy (Plan B) immediately\n  2. Give zinc supplementation for diarrhea\n  3. Advise the mother to continue feeding the child\n  4. Refer to the nearest health facility for same-day assessment\n\nREFERRAL NOTE (for health facility):\n  18-month-old female presenting with 2 days of diarrhea. Classified as SOME DEHYDRATION based on restlessness/irritability, eager drinking, and slow skin pinch. No general danger signs present. Started on ORS (Plan B) and zinc. Referred for same-day evaluation.\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY DIARRHOEA\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "Q_diarrhoea_no_dehydration",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: none of the some/severe dehydration criteria met; 'no dehydration' (green) is not written in the sample text and is inferred from the absence of the listed criteria",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Acute Diarrhea with No Dehydration",
+     0.95
+    ]
+   ],
+   "guidelines_cited": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "FAST BREATHING THRESHOLDS",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 39.334,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3795,
+     "output": 1088,
+     "reasoning": 1394,
+     "total": 6277,
+     "llm_s": 34.336
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2238,
+     "output": 600,
+     "reasoning": 591,
+     "total": 3429,
+     "llm_s": 9.381
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.362
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     18.657
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     4.848
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.059
+    ],
+    [
+     "relevance_check",
+     4.487
+    ],
+    [
+     "triage",
+     9.384
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.356,
+     "input_tokens": 841,
+     "output_tokens": 138,
+     "total_tokens": 1466,
+     "reasoning_tokens": 487
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 18.651,
+     "input_tokens": 914,
+     "output_tokens": 370,
+     "total_tokens": 1955,
+     "reasoning_tokens": 671
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.843,
+     "input_tokens": 999,
+     "output_tokens": 510,
+     "total_tokens": 1509,
+     "reasoning_tokens": 0
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.486,
+     "input_tokens": 1041,
+     "output_tokens": 70,
+     "total_tokens": 1347,
+     "reasoning_tokens": 236
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.381,
+     "input_tokens": 2238,
+     "output_tokens": 600,
+     "total_tokens": 3429,
+     "reasoning_tokens": 591
+    }
+   ],
+   "turn_times": [
+    6.367,
+    18.663,
+    14.304
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1295,
+    "wall_s": 9.192
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "3 year old with loose stools for 2 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He drinks normally and is not vomiting everything. He has not had any convulsions, and he is alert and playful."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "His eyes are not sunken, and the skin goes back straight away when pinched. He is drinking normally, and he is alert and playful rather than restless or irritable."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, 3-year-old male presenting with loose stools for 2 days.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 Acute Diarrhea with No Dehydration (95% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise home fluid management to prevent dehydration (Plan A)\n  2. Give zinc supplementation for 14 days\n  3. Continue feeding the child\n  4. Advise mother when to return immediately (e.g., if child becomes sicker, unable to drink, or develops blood in stool)\n\nBASED ON:\n  \u2022 ASSESS AND CLASSIFY DIARRHOEA\n  \u2022 GENERAL DANGER SIGNS\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "R_diarrhoea_one_sign_only",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: only one sign (sunken eyes); both SOME and SEVERE dehydration need two signs; 'no dehydration' inferred as in Q",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Acute Diarrhea with No Dehydration",
+     0.95
+    ],
+    [
+     "Acute Diarrhea with Some Dehydration",
+     0.1
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY DIARRHOEA",
+    "IMNCI: GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "GENERAL DANGER SIGNS",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 35.702,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3794,
+     "output": 1156,
+     "reasoning": 1612,
+     "total": 6562,
+     "llm_s": 24.797
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2240,
+     "output": 752,
+     "reasoning": 1225,
+     "total": 4217,
+     "llm_s": 14.35
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.524
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.914
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.813
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.071
+    ],
+    [
+     "relevance_check",
+     3.565
+    ],
+    [
+     "triage",
+     14.354
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.516,
+     "input_tokens": 839,
+     "output_tokens": 129,
+     "total_tokens": 1441,
+     "reasoning_tokens": 473
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.909,
+     "input_tokens": 916,
+     "output_tokens": 376,
+     "total_tokens": 1653,
+     "reasoning_tokens": 361
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.808,
+     "input_tokens": 999,
+     "output_tokens": 582,
+     "total_tokens": 2134,
+     "reasoning_tokens": 553
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.564,
+     "input_tokens": 1040,
+     "output_tokens": 69,
+     "total_tokens": 1334,
+     "reasoning_tokens": 225
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 14.35,
+     "input_tokens": 2240,
+     "output_tokens": 752,
+     "total_tokens": 4217,
+     "reasoning_tokens": 1225
+    }
+   ],
+   "turn_times": [
+    5.53,
+    6.921,
+    23.25
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1340,
+    "wall_s": 9.346
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "2 year old girl with diarrhoea since yesterday."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She drinks normally, is not vomiting everything, and has had no convulsions. She is also not unusually sleepy, but alert and calm."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "Her eyes look a little sunken, and the skin pinch goes back straight away. She is drinking normally, and she is calm and alert rather than irritable."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, Diarrhea since yesterday in a 2-year-old child.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 Acute Diarrhea with No Dehydration (95% confidence)\n  \u2022 Acute Diarrhea with Some Dehydration (10% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise home fluid management and extra fluids to prevent dehydration (Plan A)\n  2. Give zinc supplements for 14 days\n  3. Continue feeding the child\n  4. Advise mother when to return immediately (e.g., if child becomes sicker, is unable to drink, or develops blood in stool)\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY DIARRHOEA\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "S_severe_dehydration_infant",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: lethargic + drinking poorly (two signs) => SEVERE DEHYDRATION; lethargic is also a general danger sign (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.871,
+   "red_flags": [
+    "lethargic",
+    "severe dehydration"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Dehydration",
+     0.99
+    ],
+    [
+     "Very Severe Disease / Sepsis",
+     0.8
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: GENERAL DANGER SIGNS",
+    "IMNCI: ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "GENERAL DANGER SIGNS",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 38.999,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3819,
+     "output": 1226,
+     "reasoning": 2473,
+     "total": 7518,
+     "llm_s": 32.808
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2334,
+     "output": 734,
+     "reasoning": 679,
+     "total": 3747,
+     "llm_s": 11.546
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.109
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.467
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.776
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.072
+    ],
+    [
+     "relevance_check",
+     5.474
+    ],
+    [
+     "triage",
+     11.549
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.104,
+     "input_tokens": 837,
+     "output_tokens": 123,
+     "total_tokens": 1475,
+     "reasoning_tokens": 515
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.461,
+     "input_tokens": 915,
+     "output_tokens": 443,
+     "total_tokens": 2174,
+     "reasoning_tokens": 816
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.77,
+     "input_tokens": 1011,
+     "output_tokens": 563,
+     "total_tokens": 2367,
+     "reasoning_tokens": 793
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.473,
+     "input_tokens": 1056,
+     "output_tokens": 97,
+     "total_tokens": 1502,
+     "reasoning_tokens": 349
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.546,
+     "input_tokens": 2334,
+     "output_tokens": 734,
+     "total_tokens": 3747,
+     "reasoning_tokens": 679
+    }
+   ],
+   "turn_times": [
+    6.115,
+    10.476,
+    22.408
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1585,
+    "wall_s": 11.581
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "1 year old with bad diarrhoea."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He drinks poorly, and he is very sleepy and hard to wake. He has not had any fits, and he is not vomiting everything."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "Yes, his eyes are sunken, the skin pinch goes back slowly, and he is drinking poorly. I haven't noticed him being restless or irritable, but he is very sleepy, floppy, and hard to wake."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 12 months, One-year-old male presenting with severe diarrhea, lethargy, and poor drinking.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Dehydration (99% confidence)\n  \u2022 Very Severe Disease / Sepsis (80% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Begin immediate rehydration therapy (Plan C) if trained, or provide ORS if the child can drink while arranging transport.\n  2. Refer URGENTLY to the nearest hospital.\n  3. Keep the child warm and continue to offer breastmilk or ORS frequently on the way to the hospital if the child can swallow.\n\nREFERRAL NOTE (for health facility):\n  12-month-old male presenting with severe diarrhea, lethargy, sunken eyes, and poor drinking. Classified as Severe Dehydration with a general danger sign (lethargic). Requires immediate medical attention and IV fluid management (Plan C).\n\nBASED ON:\n  \u2022 IMNCI: GENERAL DANGER SIGNS\n  \u2022 IMNCI: ASSESS AND CLASSIFY DIARRHOEA\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  unable to drink or breastfeed, skin pinch very slow, drinks eagerly\n\nAssessment confidence: High (87%)\n=================================================="
+  },
+  {
+   "id": "T_fever_stiff_neck",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: fever with stiff neck => VERY SEVERE FEBRILE DISEASE, refer urgently (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "stiff neck"
+   ],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Very Severe Febrile Disease (Suspected Meningitis)",
+     0.95
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY FEVER",
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "GENERAL DANGER SIGNS"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 38.443,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3749,
+     "output": 1292,
+     "reasoning": 2977,
+     "total": 8018,
+     "llm_s": 37.986
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2483,
+     "output": 568,
+     "reasoning": 584,
+     "total": 3635,
+     "llm_s": 9.617
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.416
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.67
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     14.662
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.05
+    ],
+    [
+     "relevance_check",
+     9.257
+    ],
+    [
+     "triage",
+     9.621
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.409,
+     "input_tokens": 841,
+     "output_tokens": 213,
+     "total_tokens": 1340,
+     "reasoning_tokens": 286
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.664,
+     "input_tokens": 918,
+     "output_tokens": 452,
+     "total_tokens": 1762,
+     "reasoning_tokens": 392
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 14.657,
+     "input_tokens": 945,
+     "output_tokens": 556,
+     "total_tokens": 2752,
+     "reasoning_tokens": 1251
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 9.256,
+     "input_tokens": 1045,
+     "output_tokens": 71,
+     "total_tokens": 2164,
+     "reasoning_tokens": 1048
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.617,
+     "input_tokens": 2483,
+     "output_tokens": 568,
+     "total_tokens": 3635,
+     "reasoning_tokens": 584
+    }
+   ],
+   "turn_times": [
+    6.423,
+    7.677,
+    24.344
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1126,
+    "wall_s": 8.394
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "2 year old with high fever for 2 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally, not vomiting everything, and has not had any fits. She is irritable, but she is awake and alert."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "Yes, she has a stiff neck. She cries and cannot bend her neck forward."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, 2-year-old female presenting with high fever for 2 days and a stiff neck.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Very Severe Febrile Disease (Suspected Meningitis) (95% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give first dose of appropriate antibiotic per IMNCI protocol\n  2. Give one dose of paracetamol in clinic for high fever\n  3. Treat the child to prevent low blood sugar\n  4. Refer URGENTLY to hospital immediately after pre-referral treatments\n\nREFERRAL NOTE (for health facility):\n  2-year-old female presenting with high fever for 2 days, irritability, and a stiff neck. Classified as Very Severe Febrile Disease per IMNCI guidelines. Pre-referral treatment (antibiotic, paracetamol, prevention of low blood sugar) advised. Urgent assessment for meningitis required.\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY FEVER\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "U_fever_runny_nose",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: FEVER, malaria unlikely (runny nose, no danger sign) => paracetamol and advise when to return (green)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.75,
+   "red_flags": [],
+   "completeness": 0.75,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Common Cold (No Pneumonia: Cough or Cold)",
+     0.9
+    ],
+    [
+     "Fever (malaria unlikely)",
+     0.9
+    ]
+   ],
+   "guidelines_cited": [
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "GENERAL DANGER SIGNS"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 33.55,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3735,
+     "output": 1102,
+     "reasoning": 1695,
+     "total": 6532,
+     "llm_s": 26.355
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2239,
+     "output": 650,
+     "reasoning": 692,
+     "total": 3581,
+     "llm_s": 11.889
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.279
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.052
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.241
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.058
+    ],
+    [
+     "relevance_check",
+     4.802
+    ],
+    [
+     "triage",
+     11.894
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.273,
+     "input_tokens": 841,
+     "output_tokens": 158,
+     "total_tokens": 1538,
+     "reasoning_tokens": 539
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.047,
+     "input_tokens": 915,
+     "output_tokens": 429,
+     "total_tokens": 1786,
+     "reasoning_tokens": 442
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.234,
+     "input_tokens": 935,
+     "output_tokens": 446,
+     "total_tokens": 1868,
+     "reasoning_tokens": 487
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.801,
+     "input_tokens": 1044,
+     "output_tokens": 69,
+     "total_tokens": 1340,
+     "reasoning_tokens": 227
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.889,
+     "input_tokens": 2239,
+     "output_tokens": 650,
+     "total_tokens": 3581,
+     "reasoning_tokens": 692
+    }
+   ],
+   "turn_times": [
+    6.285,
+    8.06,
+    19.205
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 972,
+    "wall_s": 6.854
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "3 year old with fever and runny nose since yesterday."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is drinking normally and is not vomiting everything. He has not had any convulsions, and he is alert and active."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, he does not have a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, 3-year-old boy presenting with fever and runny nose since yesterday.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 Common Cold (No Pneumonia: Cough or Cold) (90% confidence)\n  \u2022 Fever (malaria unlikely) (90% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give paracetamol for high fever.\n  2. Advise mother to continue feeding and increase fluid intake.\n  3. Advise mother to return immediately if the child develops fast or difficult breathing, becomes unable to drink, or if the condition worsens.\n\nBASED ON:\n  \u2022 ASSESS AND CLASSIFY FEVER\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 GENERAL DANGER SIGNS\n\nAssessment confidence: High (75%)\n=================================================="
+  },
+  {
+   "id": "V_hypertensive_crisis",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "WHO PEN sample: systolic >180 and/or diastolic >120 WITH symptoms (headache, visual disturbance) => hypertensive crisis, urgent referral",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.85,
+   "red_flags": [],
+   "completeness": 0.75,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Hypertensive Crisis",
+     0.85
+    ],
+    [
+     "Stroke or Transient Ischemic Attack (TIA)",
+     0.6
+    ],
+    [
+     "Acute Angle-Closure Glaucoma",
+     0.4
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 46.112,
+   "llm_calls": 6,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 5,
+     "input": 3821,
+     "output": 1307,
+     "reasoning": 3053,
+     "total": 8181,
+     "llm_s": 41.6
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 1623,
+     "output": 755,
+     "reasoning": 644,
+     "total": 3022,
+     "llm_s": 12.321
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.446
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     15.293
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.959
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.062
+    ],
+    [
+     "relevance_check",
+     7.92
+    ],
+    [
+     "triage",
+     12.324
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.441,
+     "input_tokens": 844,
+     "output_tokens": 294,
+     "total_tokens": 2117,
+     "reasoning_tokens": 979
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.874,
+     "input_tokens": 930,
+     "output_tokens": 442,
+     "total_tokens": 2125,
+     "reasoning_tokens": 753
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.413,
+     "input_tokens": 437,
+     "output_tokens": 12,
+     "total_tokens": 884,
+     "reasoning_tokens": 435
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.953,
+     "input_tokens": 957,
+     "output_tokens": 477,
+     "total_tokens": 1954,
+     "reasoning_tokens": 520
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 7.919,
+     "input_tokens": 653,
+     "output_tokens": 82,
+     "total_tokens": 1101,
+     "reasoning_tokens": 366
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 12.321,
+     "input_tokens": 1623,
+     "output_tokens": 755,
+     "total_tokens": 3022,
+     "reasoning_tokens": 644
+    }
+   ],
+   "turn_times": [
+    10.452,
+    15.299,
+    20.361
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1098,
+    "wall_s": 8.459
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "60 year old woman with a very bad headache and blurred vision."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "She does have blurred vision. However, she does not have any chest pain, breathing trouble at rest, weakness, numbness, speech problems, bleeding, confusion, or seizures."
+    ],
+    [
+     "intake",
+     "How long has she had this severe headache and blurred vision?"
+    ],
+    [
+     "caregiver",
+     "She has had the severe headache and blurred vision since this morning."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 60 years, 60-year-old female presenting with a severe headache and blurred vision since this morning.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Hypertensive Crisis (85% confidence)\n  \u2022 Stroke or Transient Ischemic Attack (TIA) (60% confidence)\n  \u2022 Acute Angle-Closure Glaucoma (40% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Measure blood pressure immediately if equipment is available.\n  2. Refer urgently to the nearest hospital. Do not delay.\n  3. Keep the patient calm and at rest during transport.\n  4. Do not administer any blood pressure lowering medications without physician guidance.\n\nREFERRAL NOTE (for health facility):\n  60-year-old female presenting with acute onset of severe headache and blurred vision since this morning. High suspicion for hypertensive crisis or acute neurological event. Vital signs including BP were not available at the time of assessment. Requires urgent evaluation and management.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n\nAssessment confidence: High (85%)\n=================================================="
+  },
+  {
+   "id": "W_hypertension_grade2_mild_headache",
+   "set": "extended",
+   "expected": "standard",
+   "predicted": "urgent",
+   "correct": false,
+   "under_triage": false,
+   "over_triage": true,
+   "basis": "WHO PEN sample: 172/104 = Grade 2 without emergency features => refer to physician within 24-48 hours",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Grade 2 (Moderate) Hypertension",
+     0.95
+    ],
+    [
+     "Hypertensive Crisis",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT",
+    "WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 35.311,
+   "llm_calls": 4,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 3,
+     "input": 2446,
+     "output": 778,
+     "reasoning": 1838,
+     "total": 5062,
+     "llm_s": 23.12
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 1605,
+     "output": 880,
+     "reasoning": 1204,
+     "total": 3689,
+     "llm_s": 15.946
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.311
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.978
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.056
+    ],
+    [
+     "relevance_check",
+     3.842
+    ],
+    [
+     "triage",
+     15.95
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.306,
+     "input_tokens": 850,
+     "output_tokens": 228,
+     "total_tokens": 2184,
+     "reasoning_tokens": 1106
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.973,
+     "input_tokens": 940,
+     "output_tokens": 483,
+     "total_tokens": 1923,
+     "reasoning_tokens": 500
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.841,
+     "input_tokens": 656,
+     "output_tokens": 67,
+     "total_tokens": 955,
+     "reasoning_tokens": 232
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 15.946,
+     "input_tokens": 1605,
+     "output_tokens": 880,
+     "total_tokens": 3689,
+     "reasoning_tokens": 1204
+    }
+   ],
+   "turn_times": [
+    10.317,
+    24.994
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 872,
+    "wall_s": 7.968
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "52 year old man, blood pressure 172/104, mild headache."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "No, he does not have any of those symptoms. There is no chest pain, trouble breathing at rest, weakness, numbness, speech trouble, bleeding, confusion, seizures, or vision problems."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 52 years, 52-year-old man with elevated blood pressure of 172/104 mmHg and mild headache.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Grade 2 (Moderate) Hypertension (95% confidence)\n  \u2022 Hypertensive Crisis (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Refer to physician for evaluation and treatment initiation within 24-48 hours.\n  2. Advise patient to seek immediate emergency care if he develops severe headache, chest pain, visual disturbances, seizures, or confusion.\n  3. Screen for diabetes (fasting blood glucose or HbA1c) at the health facility due to age >= 45 and presence of hypertension.\n\nREFERRAL NOTE (for health facility):\n  52-year-old male presenting with Grade 2 Hypertension (BP 172/104 mmHg) and mild headache. No red flag danger signs (no chest pain, visual disturbances, or signs of stroke). Referred for physician evaluation and treatment initiation within 24-48 hours, as well as diabetes screening.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n  \u2022 WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "X_hypertension_grade3_no_symptoms",
+   "set": "extended",
+   "expected": "standard",
+   "predicted": "urgent",
+   "correct": false,
+   "under_triage": false,
+   "over_triage": true,
+   "basis": "WHO PEN sample: 185/112 = Grade 3 but NO symptoms, so not a crisis; Grade 2-3 without emergency features => refer within 24-48 hours",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Hypertension (Grade 3) without emergency features",
+     0.95
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT",
+    "WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 36.953,
+   "llm_calls": 4,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 3,
+     "input": 2432,
+     "output": 569,
+     "reasoning": 1673,
+     "total": 4674,
+     "llm_s": 25.161
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 1596,
+     "output": 739,
+     "reasoning": 1487,
+     "total": 3822,
+     "llm_s": 15.48
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     12.742
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.661
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.05
+    ],
+    [
+     "relevance_check",
+     3.769
+    ],
+    [
+     "triage",
+     15.483
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 12.737,
+     "input_tokens": 854,
+     "output_tokens": 250,
+     "total_tokens": 1685,
+     "reasoning_tokens": 581
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.656,
+     "input_tokens": 926,
+     "output_tokens": 255,
+     "total_tokens": 2093,
+     "reasoning_tokens": 912
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.768,
+     "input_tokens": 652,
+     "output_tokens": 64,
+     "total_tokens": 896,
+     "reasoning_tokens": 180
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 15.48,
+     "input_tokens": 1596,
+     "output_tokens": 739,
+     "total_tokens": 3822,
+     "reasoning_tokens": 1487
+    }
+   ],
+   "turn_times": [
+    12.747,
+    24.205
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 601,
+    "wall_s": 3.672
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "50 year old woman, blood pressure 185/112 at a screening camp, feels fine."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "No, she doesn't have any of those symptoms. She feels completely well and has no complaints."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 50 years, Asymptomatic elevated blood pressure of 185/112 mmHg detected at a screening camp.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Hypertension (Grade 3) without emergency features (95% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Refer to a physician for evaluation and treatment initiation within 24-48 hours.\n  2. Counsel the patient on warning signs (severe headache, chest pain, visual changes, weakness) and advise immediate hospital visit if any develop.\n  3. Perform diabetes screening (fasting blood glucose or HbA1c) as the patient is over 45 and has hypertension.\n\nREFERRAL NOTE (for health facility):\n  50-year-old female presenting with asymptomatic severe hypertension (BP 185/112 mmHg). No signs of hypertensive crisis (no chest pain, visual disturbances, or neurological deficits). Referred for physician evaluation and treatment initiation within 24-48 hours per WHO PEN guidelines. Also requires diabetes screening.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n  \u2022 WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "Y_adult_chest_pain",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "Project RED_FLAG_KEYWORDS (pre-existing): chest pain is a red flag; project triage prompt: any red flag => urgent/emergency",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [
+    "chest pain"
+   ],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Acute Coronary Syndrome (Myocardial Infarction)",
+     0.95
+    ],
+    [
+     "Hypertensive Emergency",
+     0.4
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 49.145,
+   "llm_calls": 7,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 5,
+     "input": 3409,
+     "output": 871,
+     "reasoning": 2626,
+     "total": 6906,
+     "llm_s": 31.161
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 2,
+     "input": 3218,
+     "output": 1318,
+     "reasoning": 1234,
+     "total": 5770,
+     "llm_s": 24.425
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.568
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.137
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.071
+    ],
+    [
+     "relevance_check",
+     2.784
+    ],
+    [
+     "triage",
+     12.101
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     7.917
+    ],
+    [
+     "relevance_check",
+     3.848
+    ],
+    [
+     "triage",
+     12.331
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.562,
+     "input_tokens": 842,
+     "output_tokens": 258,
+     "total_tokens": 1740,
+     "reasoning_tokens": 640
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.13,
+     "input_tokens": 934,
+     "output_tokens": 431,
+     "total_tokens": 2222,
+     "reasoning_tokens": 857
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 2.783,
+     "input_tokens": 646,
+     "output_tokens": 69,
+     "total_tokens": 871,
+     "reasoning_tokens": 156
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 12.097,
+     "input_tokens": 1609,
+     "output_tokens": 659,
+     "total_tokens": 2885,
+     "reasoning_tokens": 617
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "retrieval",
+     "latency_s": 7.84,
+     "input_tokens": 341,
+     "output_tokens": 43,
+     "total_tokens": 1192,
+     "reasoning_tokens": 808
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.846,
+     "input_tokens": 646,
+     "output_tokens": 70,
+     "total_tokens": 881,
+     "reasoning_tokens": 165
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 12.328,
+     "input_tokens": 1609,
+     "output_tokens": 659,
+     "total_tokens": 2885,
+     "reasoning_tokens": 617
+    }
+   ],
+   "turn_times": [
+    7.573,
+    41.572
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 849,
+    "wall_s": 6.856
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "58 year old man with chest pain for an hour."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "He has tight, heavy chest pain spreading to his left arm, but he has no weakness, numbness, trouble speaking, bleeding, confusion, or seizures. I have not noticed any breathing or vision problems."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 58 years, Tight, heavy chest pain radiating to the left arm for one hour.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Acute Coronary Syndrome (Myocardial Infarction) (95% confidence)\n  \u2022 Hypertensive Emergency (40% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Arrange immediate emergency transport to the nearest hospital with cardiac facilities.\n  2. Keep the patient calm, resting, and seated or lying down.\n  3. Administer aspirin (e.g., 300mg chewed) if available and permitted by local emergency protocols for suspected heart attack.\n  4. Monitor the patient closely during transport and be prepared for CPR if the patient becomes unresponsive.\n\nREFERRAL NOTE (for health facility):\n  58-year-old male presenting with 1 hour of severe, tight, heavy chest pain radiating to the left arm. Suspected Acute Coronary Syndrome. Immediate cardiac evaluation and intervention required.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "Z_adult_stroke_signs",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "Project RED_FLAG_KEYWORDS (pre-existing): signs of stroke",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.797,
+   "red_flags": [
+    "signs of stroke"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Acute Ischemic Stroke",
+     0.95
+    ],
+    [
+     "Hemorrhagic Stroke",
+     0.85
+    ],
+    [
+     "Transient Ischemic Attack (TIA)",
+     0.4
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT"
+   ],
+   "retrieved_sections": [
+    "CARDIOVASCULAR RISK MANAGEMENT",
+    "DIABETES RISK ASSESSMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 52.557,
+   "llm_calls": 7,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 5,
+     "input": 3438,
+     "output": 713,
+     "reasoning": 3163,
+     "total": 7314,
+     "llm_s": 36.853
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 2,
+     "input": 3270,
+     "output": 1646,
+     "reasoning": 1738,
+     "total": 6654,
+     "llm_s": 26.977
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     5.91
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     12.251
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.066
+    ],
+    [
+     "relevance_check",
+     6.381
+    ],
+    [
+     "triage",
+     13.885
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     7.322
+    ],
+    [
+     "relevance_check",
+     5.092
+    ],
+    [
+     "triage",
+     13.099
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 5.905,
+     "input_tokens": 843,
+     "output_tokens": 252,
+     "total_tokens": 1394,
+     "reasoning_tokens": 299
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 12.244,
+     "input_tokens": 938,
+     "output_tokens": 255,
+     "total_tokens": 2516,
+     "reasoning_tokens": 1323
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 6.38,
+     "input_tokens": 653,
+     "output_tokens": 86,
+     "total_tokens": 1201,
+     "reasoning_tokens": 462
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 13.881,
+     "input_tokens": 1635,
+     "output_tokens": 823,
+     "total_tokens": 3327,
+     "reasoning_tokens": 869
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "retrieval",
+     "latency_s": 7.233,
+     "input_tokens": 351,
+     "output_tokens": 46,
+     "total_tokens": 1148,
+     "reasoning_tokens": 751
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.091,
+     "input_tokens": 653,
+     "output_tokens": 74,
+     "total_tokens": 1055,
+     "reasoning_tokens": 328
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 13.096,
+     "input_tokens": 1635,
+     "output_tokens": 823,
+     "total_tokens": 3327,
+     "reasoning_tokens": 869
+    }
+   ],
+   "turn_times": [
+    5.915,
+    46.641
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 852,
+    "wall_s": 5.806
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "45 year old woman, her right arm suddenly went weak."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "Two hours ago her right arm suddenly became weak and her speech is slurred, but she has no chest pain, seizures, bleeding, or breathing difficulty at rest. I haven't noticed any confusion or vision problems."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 45 years, Sudden right arm weakness and slurred speech starting 2 hours ago.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Acute Ischemic Stroke (95% confidence)\n  \u2022 Hemorrhagic Stroke (85% confidence)\n  \u2022 Transient Ischemic Attack (TIA) (40% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Arrange immediate urgent transport to the nearest hospital with a CT scanner and stroke capabilities.\n  2. Keep the patient NPO (nothing by mouth) due to slurred speech and high risk of aspiration.\n  3. Monitor airway, breathing, and circulation during transport.\n  4. Clearly communicate the exact time of symptom onset (2 hours ago) to the receiving facility, as the patient is within the window for acute stroke interventions.\n\nREFERRAL NOTE (for health facility):\n  45-year-old female presenting with sudden onset right arm weakness and slurred speech starting exactly 2 hours ago. Suspected acute stroke. Patient is within the thrombolysis window. NPO maintained. Urgent neurological evaluation and neuroimaging required.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 1: CARDIOVASCULAR RISK MANAGEMENT\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  confusion or unconscious, visual disturbance\n\nAssessment confidence: High (80%)\n=================================================="
+  },
+  {
+   "id": "AA_diabetes_two_readings",
+   "set": "extended",
+   "expected": "standard",
+   "predicted": "standard",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "WHO PEN sample: fasting glucose >=7.0 mmol/L on two occasions => diabetes => refer to physician for treatment initiation",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.75,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Diabetes Mellitus",
+     0.95
+    ],
+    [
+     "Pre-diabetes",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT"
+   ],
+   "retrieved_sections": [
+    "DIABETES RISK ASSESSMENT",
+    "CARDIOVASCULAR RISK MANAGEMENT"
+   ],
+   "intake_questions_asked": 1,
+   "system_wall_s": 30.251,
+   "llm_calls": 4,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 3,
+     "input": 2417,
+     "output": 704,
+     "reasoning": 1693,
+     "total": 4814,
+     "llm_s": 21.939
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 1598,
+     "output": 662,
+     "reasoning": 1067,
+     "total": 3327,
+     "llm_s": 13.356
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.325
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.49
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.059
+    ],
+    [
+     "relevance_check",
+     5.134
+    ],
+    [
+     "triage",
+     13.361
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.32,
+     "input_tokens": 844,
+     "output_tokens": 221,
+     "total_tokens": 1490,
+     "reasoning_tokens": 425
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.485,
+     "input_tokens": 915,
+     "output_tokens": 425,
+     "total_tokens": 2191,
+     "reasoning_tokens": 851
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 5.134,
+     "input_tokens": 658,
+     "output_tokens": 58,
+     "total_tokens": 1133,
+     "reasoning_tokens": 417
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 13.356,
+     "input_tokens": 1598,
+     "output_tokens": 662,
+     "total_tokens": 3327,
+     "reasoning_tokens": 1067
+    }
+   ],
+   "turn_times": [
+    7.33,
+    22.921
+   ],
+   "caregiver": {
+    "calls": 1,
+    "total_tokens": 733,
+    "wall_s": 4.797
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "50 year old man, fasting sugar 8.1 twice."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Does the patient have any chest pain, difficulty breathing while resting, sudden weakness or numbness on one side, trouble speaking, heavy bleeding, confusion, fits (seizures), or problems with their vision?"
+    ],
+    [
+     "caregiver",
+     "No, he doesn't have any of those symptoms. He feels fine and has no complaints."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 50 years, Elevated fasting blood sugar of 8.1 mmol/L measured twice in an asymptomatic 50-year-old male.\n\nTRIAGE LEVEL: \ud83d\udfe1 STANDARD\nNeeds medical attention. Visit health center within 48-72 hours.\n\nSUSPECTED CONDITIONS:\n  \u2022 Diabetes Mellitus (95% confidence)\n  \u2022 Pre-diabetes (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Refer to a physician or medical officer for evaluation and initiation of diabetes treatment.\n  2. Advise the patient on lifestyle modifications including a healthy diet and regular physical activity.\n  3. Educate the patient on signs of high blood sugar (excessive thirst, frequent urination) and advise to return if these develop.\n\nBASED ON:\n  \u2022 WHO PEN PROTOCOL 2: DIABETES RISK ASSESSMENT\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "AB_fast_breathing_indrawing_unknown",
+   "set": "extended",
+   "expected": "urgent",
+   "predicted": "urgent",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: 44/min >= 40 for 1-5 years => PNEUMONIA (yellow -> urgent). Chest indrawing is NOT known to the caregiver (tests the 'unknown' path)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.849,
+   "red_flags": [],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Pneumonia",
+     0.9
+    ],
+    [
+     "Severe Pneumonia",
+     0.2
+    ]
+   ],
+   "guidelines_cited": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "CHEST INDRAWING DEFINITION"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 33.328,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3796,
+     "output": 1195,
+     "reasoning": 1137,
+     "total": 6128,
+     "llm_s": 23.305
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2221,
+     "output": 867,
+     "reasoning": 1030,
+     "total": 4118,
+     "llm_s": 14.347
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.585
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     3.657
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.651
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.056
+    ],
+    [
+     "relevance_check",
+     4.432
+    ],
+    [
+     "triage",
+     14.352
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.577,
+     "input_tokens": 843,
+     "output_tokens": 343,
+     "total_tokens": 1668,
+     "reasoning_tokens": 482
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 3.651,
+     "input_tokens": 918,
+     "output_tokens": 241,
+     "total_tokens": 1159,
+     "reasoning_tokens": 0
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.646,
+     "input_tokens": 1009,
+     "output_tokens": 543,
+     "total_tokens": 1917,
+     "reasoning_tokens": 365
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.431,
+     "input_tokens": 1026,
+     "output_tokens": 68,
+     "total_tokens": 1384,
+     "reasoning_tokens": 290
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 14.347,
+     "input_tokens": 2221,
+     "output_tokens": 867,
+     "total_tokens": 4118,
+     "reasoning_tokens": 1030
+    }
+   ],
+   "turn_times": [
+    7.595,
+    3.663,
+    22.069
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1240,
+    "wall_s": 9.076
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "4 year old with cough for 5 days, breathing fast."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally and is not vomiting everything. She hasn't had any fits, and she is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 44 breaths in a minute while she was calm. I haven't looked at her chest so I don't know if it pulls in, and there is no harsh noise when she breathes."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 4 years, 4-year-old female presenting with cough for 5 days and fast breathing.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Pneumonia (90% confidence)\n  \u2022 Severe Pneumonia (20% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Assess immediately for chest indrawing; if present, upgrade to emergency and refer to hospital immediately.\n  2. If no chest indrawing, give an appropriate oral antibiotic for 5 days per IMNCI protocol.\n  3. Refer to the health center today for medical evaluation of pneumonia.\n  4. Advise the caregiver on signs to return immediately (e.g., breathing becomes more difficult, unable to drink, lethargy).\n\nREFERRAL NOTE (for health facility):\n  4-year-old female presenting with a 5-day history of cough and fast breathing (RR 44/min). No general danger signs or stridor noted. Chest indrawing status pending assessment. Classified as Pneumonia (IMNCI yellow). Referred for same-day evaluation and antibiotic management.\n\nBASED ON:\n  \u2022 FAST BREATHING THRESHOLDS\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 CHEST INDRAWING DEFINITION\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  chest indrawing\n\nAssessment confidence: High (85%)\n=================================================="
+  },
+  {
+   "id": "AC_infant_severe_dehydration_signs",
+   "set": "extended",
+   "expected": "emergency",
+   "predicted": "emergency",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: sunken eyes + skin pinch goes back very slowly (two signs) => SEVERE DEHYDRATION (pink)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.874,
+   "red_flags": [
+    "severe dehydration"
+   ],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Severe Dehydration",
+     0.95
+    ],
+    [
+     "Some Dehydration",
+     0.2
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "retrieved_sections": [
+    "ASSESS AND CLASSIFY DIARRHOEA",
+    "FAST BREATHING THRESHOLDS",
+    "GENERAL DANGER SIGNS",
+    "ASSESS AND CLASSIFY FEVER",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING"
+   ],
+   "intake_questions_asked": 2,
+   "system_wall_s": 29.76,
+   "llm_calls": 5,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 4,
+     "input": 3813,
+     "output": 1200,
+     "reasoning": 1326,
+     "total": 6339,
+     "llm_s": 24.288
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2279,
+     "output": 653,
+     "reasoning": 565,
+     "total": 3497,
+     "llm_s": 9.259
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     4.437
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.259
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.726
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.051
+    ],
+    [
+     "relevance_check",
+     3.883
+    ],
+    [
+     "triage",
+     9.262
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.431,
+     "input_tokens": 840,
+     "output_tokens": 228,
+     "total_tokens": 1306,
+     "reasoning_tokens": 238
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.254,
+     "input_tokens": 922,
+     "output_tokens": 373,
+     "total_tokens": 1740,
+     "reasoning_tokens": 445
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.721,
+     "input_tokens": 1007,
+     "output_tokens": 512,
+     "total_tokens": 1940,
+     "reasoning_tokens": 421
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.882,
+     "input_tokens": 1044,
+     "output_tokens": 87,
+     "total_tokens": 1353,
+     "reasoning_tokens": 222
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 9.259,
+     "input_tokens": 2279,
+     "output_tokens": 653,
+     "total_tokens": 3497,
+     "reasoning_tokens": 565
+    }
+   ],
+   "turn_times": [
+    4.443,
+    8.265,
+    17.052
+   ],
+   "caregiver": {
+    "calls": 2,
+    "total_tokens": 1397,
+    "wall_s": 36.271
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "9 month old with diarrhoea for 3 days."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is awake and drinking eagerly, and he is not unusually sleepy or lethargic. He has not had any fits, and he is not vomiting everything."
+    ],
+    [
+     "intake",
+     "Are the child's eyes sunken? When you pinch the skin of the belly, does it go back very slowly, slowly, or straight away? Is the child drinking poorly, or drinking eagerly as if thirsty? Is the child restless or irritable?"
+    ],
+    [
+     "caregiver",
+     "Yes, his eyes are sunken, the skin pinch goes back very slowly, and he is drinking eagerly. I haven't noticed if he is restless or irritable."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 9 months, 9-month-old male with diarrhea for 3 days and signs of dehydration.\n\nTRIAGE LEVEL: \ud83d\udd34 EMERGENCY\nLife-threatening. Refer to hospital IMMEDIATELY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Severe Dehydration (95% confidence)\n  \u2022 Some Dehydration (20% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give fluid for severe dehydration (Plan C) immediately if trained, or start ORS on the way to the hospital\n  2. Refer URGENTLY to hospital\n  3. Advise the mother to continue breastfeeding and giving ORS during the journey\n\nREFERRAL NOTE (for health facility):\n  9-month-old male presenting with acute diarrhea for 3 days. Classified as SEVERE DEHYDRATION based on sunken eyes and skin pinch going back very slowly. Referred urgently for IV fluids (Plan C management).\n\nBASED ON:\n  \u2022 IMNCI: ASSESS AND CLASSIFY DIARRHOEA\n\nDANGER SIGNS NOT ASSESSED (check before relying on this result):\n  skin pinch slow, restless irritable\n\nAssessment confidence: High (87%)\n=================================================="
+  },
+  {
+   "id": "AD_fever_fast_breathing",
+   "set": "extended",
+   "expected": "urgent",
+   "predicted": "urgent",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: 52/min >= 40 for 1-5 years => PNEUMONIA (yellow -> urgent)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.95,
+   "red_flags": [],
+   "completeness": 0.8,
+   "safety_override": false,
+   "suspected": [
+    [
+     "Pneumonia",
+     0.95
+    ],
+    [
+     "Severe Pneumonia",
+     0.05
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI: FAST BREATHING THRESHOLDS BY AGE",
+    "IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "IMNCI: ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "intake_questions_asked": 3,
+   "system_wall_s": 44.969,
+   "llm_calls": 6,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 5,
+     "input": 4636,
+     "output": 1796,
+     "reasoning": 2337,
+     "total": 8769,
+     "llm_s": 37.746
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2043,
+     "output": 766,
+     "reasoning": 787,
+     "total": 3596,
+     "llm_s": 11.786
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     7.492
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     4.2
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     12.9
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     8.498
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.058
+    ],
+    [
+     "relevance_check",
+     4.684
+    ],
+    [
+     "triage",
+     11.79
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 7.486,
+     "input_tokens": 839,
+     "output_tokens": 276,
+     "total_tokens": 1644,
+     "reasoning_tokens": 529
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 4.195,
+     "input_tokens": 913,
+     "output_tokens": 339,
+     "total_tokens": 1252,
+     "reasoning_tokens": 0
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 12.895,
+     "input_tokens": 992,
+     "output_tokens": 550,
+     "total_tokens": 2604,
+     "reasoning_tokens": 1062
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 8.487,
+     "input_tokens": 1012,
+     "output_tokens": 564,
+     "total_tokens": 2089,
+     "reasoning_tokens": 513
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 4.683,
+     "input_tokens": 880,
+     "output_tokens": 67,
+     "total_tokens": 1180,
+     "reasoning_tokens": 233
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.786,
+     "input_tokens": 2043,
+     "output_tokens": 766,
+     "total_tokens": 3596,
+     "reasoning_tokens": 787
+    }
+   ],
+   "turn_times": [
+    7.497,
+    4.206,
+    12.908,
+    20.357
+   ],
+   "caregiver": {
+    "calls": 3,
+    "total_tokens": 1726,
+    "wall_s": 12.837
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "3 year old with fever and fast breathing."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "He is drinking normally and is not vomiting everything. He has not had any fits, and he is alert and active."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 52 breaths in one minute while he was calm. His chest is not pulling in, and there is no harsh noise when he breathes."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, he does not have a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 3 years, Three-year-old male presenting with fever and fast breathing.\n\nTRIAGE LEVEL: \ud83d\udfe0 URGENT\nSerious condition. Refer to health center TODAY.\n\nSUSPECTED CONDITIONS:\n  \u2022 Pneumonia (95% confidence)\n  \u2022 Severe Pneumonia (5% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Give an appropriate oral antibiotic for 5 days per IMNCI protocol\n  2. Give paracetamol for high fever\n  3. Refer to health facility for same-day evaluation\n  4. Advise caregiver on signs to return immediately (e.g., difficulty breathing, chest indrawing, unable to drink)\n\nREFERRAL NOTE (for health facility):\n  3-year-old male presenting with fever and fast breathing (RR 52/min). No chest indrawing or general danger signs present. Classified as Pneumonia per IMNCI guidelines. Referred for same-day evaluation and antibiotic management.\n\nBASED ON:\n  \u2022 IMNCI: FAST BREATHING THRESHOLDS BY AGE\n  \u2022 IMNCI: ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 IMNCI: ASSESS AND CLASSIFY FEVER\n\nAssessment confidence: High (95%)\n=================================================="
+  },
+  {
+   "id": "AE_mild_cough_slight_fever",
+   "set": "extended",
+   "expected": "self_care",
+   "predicted": "self_care",
+   "correct": true,
+   "under_triage": false,
+   "over_triage": false,
+   "basis": "IMNCI sample: no fast breathing (32/min < 40), no danger sign => COUGH OR COLD; FEVER malaria unlikely (green)",
+   "status": "ok",
+   "final_phase": "done",
+   "cycle_count": 0,
+   "confidence": 0.85,
+   "red_flags": [],
+   "completeness": 0.85,
+   "safety_override": false,
+   "suspected": [
+    [
+     "No Pneumonia: Cough or Cold",
+     0.95
+    ],
+    [
+     "Fever (Malaria Unlikely)",
+     0.9
+    ]
+   ],
+   "guidelines_cited": [
+    "IMNCI FAST BREATHING THRESHOLDS BY AGE",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY FEVER"
+   ],
+   "retrieved_sections": [
+    "FAST BREATHING THRESHOLDS",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING",
+    "ASSESS AND CLASSIFY FEVER",
+    "CHEST INDRAWING DEFINITION",
+    "ASSESS AND CLASSIFY DIARRHOEA"
+   ],
+   "intake_questions_asked": 3,
+   "system_wall_s": 49.008,
+   "llm_calls": 6,
+   "llm_errors": [],
+   "per_model": {
+    "gemini-3.8-flash": {
+     "calls": 5,
+     "input": 4809,
+     "output": 1853,
+     "reasoning": 3027,
+     "total": 9689,
+     "llm_s": 41.465
+    },
+    "gemini-3.1-pro-preview": {
+     "calls": 1,
+     "input": 2276,
+     "output": 765,
+     "reasoning": 619,
+     "total": 3660,
+     "llm_s": 11.115
+    }
+   },
+   "node_times": [
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     9.321
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     6.369
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.001
+    ],
+    [
+     "intake",
+     11.763
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "intake",
+     10.344
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "retrieval",
+     0.063
+    ],
+    [
+     "relevance_check",
+     3.692
+    ],
+    [
+     "triage",
+     11.118
+    ],
+    [
+     "supervisor",
+     0.0
+    ],
+    [
+     "output",
+     0.0
+    ]
+   ],
+   "calls": [
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 9.315,
+     "input_tokens": 841,
+     "output_tokens": 253,
+     "total_tokens": 1875,
+     "reasoning_tokens": 781
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 6.364,
+     "input_tokens": 917,
+     "output_tokens": 407,
+     "total_tokens": 1682,
+     "reasoning_tokens": 358
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 11.756,
+     "input_tokens": 997,
+     "output_tokens": 536,
+     "total_tokens": 2405,
+     "reasoning_tokens": 872
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "intake",
+     "latency_s": 10.338,
+     "input_tokens": 1017,
+     "output_tokens": 576,
+     "total_tokens": 2409,
+     "reasoning_tokens": 816
+    },
+    {
+     "model": "gemini-3.8-flash",
+     "node": "relevance_check",
+     "latency_s": 3.692,
+     "input_tokens": 1037,
+     "output_tokens": 81,
+     "total_tokens": 1318,
+     "reasoning_tokens": 200
+    },
+    {
+     "model": "gemini-3.1-pro-preview",
+     "node": "triage",
+     "latency_s": 11.115,
+     "input_tokens": 2276,
+     "output_tokens": 765,
+     "total_tokens": 3660,
+     "reasoning_tokens": 619
+    }
+   ],
+   "turn_times": [
+    9.326,
+    6.376,
+    11.77,
+    21.537
+   ],
+   "caregiver": {
+    "calls": 3,
+    "total_tokens": 1663,
+    "wall_s": 12.146
+   },
+   "transcript": [
+    [
+     "caregiver",
+     "2 year old with a mild cough and slight fever."
+    ],
+    [
+     "intake",
+     "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?"
+    ],
+    [
+     "caregiver",
+     "She is drinking normally, not vomiting everything, and has not had any fits. She is alert and active, not unusually sleepy."
+    ],
+    [
+     "intake",
+     "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?"
+    ],
+    [
+     "caregiver",
+     "I counted 32 breaths in one minute while she was calm. Her chest does not pull in, and there is no harsh noise when she breathes in."
+    ],
+    [
+     "intake",
+     "Does the child have a stiff neck?"
+    ],
+    [
+     "caregiver",
+     "No, she does not have a stiff neck."
+    ]
+   ],
+   "triage_card": "==================================================\n  TRIAGE ASSESSMENT\n==================================================\nPatient: 2 years, 2-year-old female presenting with a mild cough and slight fever.\n\nTRIAGE LEVEL: \ud83d\udfe2 SELF CARE\nManage at home. Return if condition worsens.\n\nSUSPECTED CONDITIONS:\n  \u2022 No Pneumonia: Cough or Cold (95% confidence)\n  \u2022 Fever (Malaria Unlikely) (90% confidence)\n\nRECOMMENDED ACTIONS:\n  1. Advise the mother on home care for cough and cold (soothe the throat, relieve cough with a safe remedy).\n  2. Give paracetamol if the fever becomes high.\n  3. Advise the mother when to return immediately (if the child develops fast breathing, difficult breathing, becomes unable to drink, or condition worsens).\n\nBASED ON:\n  \u2022 IMNCI FAST BREATHING THRESHOLDS BY AGE\n  \u2022 ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING\n  \u2022 ASSESS AND CLASSIFY FEVER\n\nAssessment confidence: High (85%)\n=================================================="
+  }
+ ]
+}
