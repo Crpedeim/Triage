@@ -2,10 +2,6 @@
  {
   "id": "A_severe_pneumonia",
   "expected": "emergency",
-  "acceptable": [
-   "emergency",
-   "urgent"
-  ],
   "basis": "IMNCI sample: chest indrawing => SEVERE PNEUMONIA OR VERY SEVERE DISEASE, refer URGENTLY to hospital (pink)",
   "opening": "My 3 year old has had a cough for 4 days and seems to be breathing fast.",
   "vignette": "Boy, 3 years old. Cough for 4 days. Counted 50 breaths per minute. Lower chest pulls in when he breathes in. Mild fever since yesterday. Still drinking, eating less. No convulsions, not vomiting everything, alert, no stridor. No medicines, no past illnesses.",
@@ -14,9 +10,6 @@
  {
   "id": "B_pneumonia_fast_breathing",
   "expected": "urgent",
-  "acceptable": [
-   "urgent"
-  ],
   "basis": "IMNCI sample: fast breathing (>=40/min age 1-5y) without danger signs => PNEUMONIA (yellow; state.py maps yellow to urgent)",
   "opening": "My daughter is 3 and has had a cough for 3 days, she is breathing a bit quickly.",
   "vignette": "Girl, 3 years old. Cough for 3 days. Counted 46 breaths per minute while calm. No chest indrawing, no stridor. Low fever. Drinking and eating normally. No convulsions, not vomiting, alert and playful. No medicines, no past illnesses.",
@@ -25,9 +18,6 @@
  {
   "id": "C_cough_or_cold",
   "expected": "self_care",
-  "acceptable": [
-   "self_care"
-  ],
   "basis": "IMNCI sample: no signs of pneumonia or very severe disease => NO PNEUMONIA: COUGH OR COLD (green)",
   "opening": "4 year old girl, mild cough for 2 days, no fever, eating fine.",
   "vignette": "Girl, 4 years old. Mild cough and runny nose for 2 days. Counted 28 breaths per minute. No chest indrawing, no stridor. No fever. Eating and drinking normally. No convulsions, no vomiting, active and alert. No medicines, no past illnesses.",
@@ -36,10 +26,6 @@
  {
   "id": "D_severe_dehydration",
   "expected": "emergency",
-  "acceptable": [
-   "emergency",
-   "urgent"
-  ],
   "basis": "IMNCI sample: >=2 of lethargic, sunken eyes, drinking poorly, slow skin pinch => SEVERE DEHYDRATION, refer URGENTLY (pink)",
   "opening": "2 year old boy, diarrhea for 3 days, not sure if he can drink.",
   "vignette": "Boy, 2 years old. Watery diarrhoea for 3 days, many times a day, no blood. Very sleepy and hard to wake. Eyes look sunken. Drinks very poorly when offered. Skin pinch on belly goes back very slowly. No convulsions. No cough. No medicines, no past illnesses.",
@@ -48,10 +34,6 @@
  {
   "id": "E_convulsions",
   "expected": "emergency",
-  "acceptable": [
-   "emergency",
-   "urgent"
-  ],
   "basis": "IMNCI sample: more than one convulsion in this illness = general danger sign; fever + danger sign => VERY SEVERE FEBRILE DISEASE, refer URGENTLY (pink)",
   "opening": "My 18 month old has a high fever and had two fits today.",
   "vignette": "Girl, 18 months old. High fever for 2 days. Had two convulsions (fits) today, each about 2 minutes. Now drowsy. Able to drink a little. No vomiting everything. No cough, no diarrhoea. No stiff neck noticed. No medicines, no past illnesses.",
@@ -60,12 +42,209 @@
  {
   "id": "F_adult_hypertension_grade2",
   "expected": "standard",
-  "acceptable": [
-   "standard"
-  ],
   "basis": "WHO PEN sample: BP 160/100 = Grade 2 without emergency features => refer to physician within 24-48 hours",
   "opening": "55 year old man, headache for one week, measured blood pressure 160/100.",
   "vignette": "Man, 55 years old. Dull headache for one week. Blood pressure measured 160/100 mmHg today and 158/98 two days ago. No chest pain, no vision problems, no weakness or numbness, no confusion, no seizures. Not on any medicines. No known diabetes.",
   "set": "baseline6"
+ },
+ {
+  "id": "G_infant_pneumonia_rr54",
+  "expected": "urgent",
+  "basis": "IMNCI sample: fast breathing for age 2-12 months is >=50/min => PNEUMONIA (yellow -> urgent)",
+  "opening": "My 8 month old son has had a cough for 3 days.",
+  "vignette": "Boy, 8 months old. Cough for 3 days. Counted 54 breaths per minute while calm. No chest indrawing, no stridor. Mild fever. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "H_infant_cough_rr46_not_fast",
+  "expected": "self_care",
+  "basis": "IMNCI sample: 46/min is below the 2-12 month threshold of 50 and no other sign => NO PNEUMONIA: COUGH OR COLD (green)",
+  "opening": "8 month old girl with a cough and runny nose for 2 days.",
+  "vignette": "Girl, 8 months old. Cough and runny nose for 2 days. Counted 46 breaths per minute while calm. No chest indrawing, no stridor. No fever. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "I_stridor_when_calm",
+  "expected": "emergency",
+  "basis": "IMNCI sample: stridor in a calm child => SEVERE PNEUMONIA OR VERY SEVERE DISEASE (pink)",
+  "opening": "My 2 year old has a cough and makes a strange noise when breathing.",
+  "vignette": "Boy, 2 years old. Cough for 2 days. Makes a harsh noise every time he breathes in, even when calm and resting. Counted 38 breaths per minute. No chest indrawing. Low fever. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "J_toddler_cough_rr38",
+  "expected": "self_care",
+  "basis": "IMNCI sample: 38/min is below the 12 month-5 year threshold of 40, no danger sign => COUGH OR COLD (green)",
+  "opening": "18 month old with a cough for 2 days.",
+  "vignette": "Girl, 18 months old. Cough for 2 days. Counted 38 breaths per minute while calm. No chest indrawing, no stridor. No fever. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "K_chest_indrawing_lay_terms",
+  "expected": "emergency",
+  "basis": "IMNCI sample: chest indrawing => SEVERE PNEUMONIA OR VERY SEVERE DISEASE, refer urgently (pink)",
+  "opening": "4 year old with cough, his chest sucks in when he breathes.",
+  "vignette": "Boy, 4 years old. Cough for 5 days. The lower part of his chest sucks in every time he breathes in. Counted 44 breaths per minute. No stridor. Fever since yesterday. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "L_fast_breathing_unable_to_drink",
+  "expected": "emergency",
+  "basis": "IMNCI sample: not able to drink = general danger sign => refer to hospital (pink)",
+  "opening": "3 year old with cough and fast breathing.",
+  "vignette": "Girl, 3 years old. Cough for 3 days. Counted 42 breaths per minute. No chest indrawing, no stridor. She is NOT able to drink anything at all, refuses every sip. No convulsions, not vomiting, awake and alert. Fever. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "M_vomits_everything",
+  "expected": "emergency",
+  "basis": "IMNCI sample: vomits everything = general danger sign (pink)",
+  "opening": "My 2 year old has a fever and keeps vomiting.",
+  "vignette": "Boy, 2 years old. Fever since yesterday. Vomits everything he eats or drinks, every time. No convulsions. Awake and alert. No cough, no fast breathing (30 breaths per minute), no chest indrawing. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "N_unable_to_breastfeed",
+  "expected": "emergency",
+  "basis": "IMNCI sample: not able to breastfeed = general danger sign (pink)",
+  "opening": "10 month old baby with fever, not feeding.",
+  "vignette": "Girl, 10 months old. Fever for 2 days. Not able to breastfeed at all, will not suck. No convulsions, not vomiting everything. Awake. No cough (32 breaths per minute), no chest indrawing. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "O_lethargic_fever",
+  "expected": "emergency",
+  "basis": "IMNCI sample: lethargic or unconscious = general danger sign (pink)",
+  "opening": "3 year old with fever for 2 days, very sleepy.",
+  "vignette": "Boy, 3 years old. Fever for 2 days. Very sleepy, hard to wake, does not look at you when awake. Drinks a little when woken. No convulsions, not vomiting everything. No cough (30 breaths per minute). No diarrhoea. No stiff neck noticed. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "P_some_dehydration",
+  "expected": "urgent",
+  "basis": "IMNCI sample: two of restless/irritable, sunken eyes, drinks eagerly, skin pinch slowly => SOME DEHYDRATION (yellow -> urgent)",
+  "opening": "18 month old with diarrhoea for 2 days.",
+  "vignette": "Girl, 18 months old. Watery diarrhoea for 2 days, no blood. Restless and irritable. Drinks eagerly, very thirsty. Eyes not sunken. Skin pinch on the belly goes back slowly (about 1 second), not very slowly. Not lethargic. No convulsions, not vomiting everything. No fever, no cough. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "Q_diarrhoea_no_dehydration",
+  "expected": "self_care",
+  "basis": "IMNCI sample: none of the some/severe dehydration criteria met; 'no dehydration' (green) is not written in the sample text and is inferred from the absence of the listed criteria",
+  "opening": "3 year old with loose stools for 2 days.",
+  "vignette": "Boy, 3 years old. Loose watery stools 3 times a day for 2 days, no blood. Alert and playful, not restless or irritable. Eyes not sunken. Drinks normally, not especially thirsty. Skin pinch goes back immediately. No convulsions, not vomiting everything. No fever, no cough. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "R_diarrhoea_one_sign_only",
+  "expected": "self_care",
+  "basis": "IMNCI sample: only one sign (sunken eyes); both SOME and SEVERE dehydration need two signs; 'no dehydration' inferred as in Q",
+  "opening": "2 year old girl with diarrhoea since yesterday.",
+  "vignette": "Girl, 2 years old. Watery diarrhoea since yesterday, no blood. Eyes look a little sunken. Alert and calm, not irritable. Drinks normally, not especially thirsty. Skin pinch goes back immediately. No convulsions, not vomiting everything. No fever, no cough. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "S_severe_dehydration_infant",
+  "expected": "emergency",
+  "basis": "IMNCI sample: lethargic + drinking poorly (two signs) => SEVERE DEHYDRATION; lethargic is also a general danger sign (pink)",
+  "opening": "1 year old with bad diarrhoea.",
+  "vignette": "Boy, 1 year old. Watery diarrhoea for 2 days, many times a day. Very sleepy and floppy, hard to wake. Drinks poorly when offered. Eyes sunken. Skin pinch goes back slowly. No convulsions, not vomiting everything. No cough. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "T_fever_stiff_neck",
+  "expected": "emergency",
+  "basis": "IMNCI sample: fever with stiff neck => VERY SEVERE FEBRILE DISEASE, refer urgently (pink)",
+  "opening": "2 year old with high fever for 2 days.",
+  "vignette": "Girl, 2 years old. High fever for 2 days. Stiff neck: cries and cannot bend her neck forward. Drinking normally. No convulsions, not vomiting everything. Irritable but awake and alert. No cough (30 breaths per minute). No diarrhoea. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "U_fever_runny_nose",
+  "expected": "self_care",
+  "basis": "IMNCI sample: FEVER, malaria unlikely (runny nose, no danger sign) => paracetamol and advise when to return (green)",
+  "opening": "3 year old with fever and runny nose since yesterday.",
+  "vignette": "Boy, 3 years old. Mild fever and runny nose since yesterday. Does not live in or visit a malaria area. No cough (counted 28 breaths per minute), no chest indrawing, no stridor. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "V_hypertensive_crisis",
+  "expected": "emergency",
+  "basis": "WHO PEN sample: systolic >180 and/or diastolic >120 WITH symptoms (headache, visual disturbance) => hypertensive crisis, urgent referral",
+  "opening": "60 year old woman with a very bad headache and blurred vision.",
+  "vignette": "Woman, 60 years old. Severe headache since this morning and blurred vision. Blood pressure measured 192/124 mmHg. No chest pain, no weakness or numbness, no trouble speaking, no confusion, no seizures, no bleeding, no breathing difficulty at rest. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "W_hypertension_grade2_mild_headache",
+  "expected": "standard",
+  "basis": "WHO PEN sample: 172/104 = Grade 2 without emergency features => refer to physician within 24-48 hours",
+  "opening": "52 year old man, blood pressure 172/104, mild headache.",
+  "vignette": "Man, 52 years old. Mild headache on and off for 3 days. Blood pressure 172/104 mmHg today and 170/102 last week. No chest pain, no vision problems, no weakness or numbness, no trouble speaking, no confusion, no seizures, no bleeding, no breathing difficulty at rest. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "X_hypertension_grade3_no_symptoms",
+  "expected": "standard",
+  "basis": "WHO PEN sample: 185/112 = Grade 3 but NO symptoms, so not a crisis; Grade 2-3 without emergency features => refer within 24-48 hours",
+  "opening": "50 year old woman, blood pressure 185/112 at a screening camp, feels fine.",
+  "vignette": "Woman, 50 years old. Feels well, no complaints. Blood pressure 185/112 mmHg today and 183/110 two days ago at a screening camp. No headache, no chest pain, no vision problems, no weakness or numbness, no trouble speaking, no confusion, no seizures, no bleeding, no breathing difficulty. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "Y_adult_chest_pain",
+  "expected": "emergency",
+  "basis": "Project RED_FLAG_KEYWORDS (pre-existing): chest pain is a red flag; project triage prompt: any red flag => urgent/emergency",
+  "opening": "58 year old man with chest pain for an hour.",
+  "vignette": "Man, 58 years old. Tight, heavy chest pain for the last hour, spreading to the left arm, sweating. Blood pressure 150/95 mmHg. No weakness or numbness, no trouble speaking, no confusion, no seizures, no bleeding. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "Z_adult_stroke_signs",
+  "expected": "emergency",
+  "basis": "Project RED_FLAG_KEYWORDS (pre-existing): signs of stroke",
+  "opening": "45 year old woman, her right arm suddenly went weak.",
+  "vignette": "Woman, 45 years old. Two hours ago her right arm suddenly became weak and her speech is slurred. Blood pressure 170/100 mmHg. No chest pain, no seizures, no bleeding, no breathing difficulty at rest. Awake. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "AA_diabetes_two_readings",
+  "expected": "standard",
+  "basis": "WHO PEN sample: fasting glucose >=7.0 mmol/L on two occasions => diabetes => refer to physician for treatment initiation",
+  "opening": "50 year old man, fasting sugar 8.1 twice.",
+  "vignette": "Man, 50 years old. Fasting blood glucose 8.1 mmol/L last week and 7.9 mmol/L today. Feels fine, no complaints. Blood pressure 132/84. No chest pain, no vision problems, no weakness, no trouble speaking, no confusion, no seizures, no bleeding, no breathing difficulty. Not on medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "AB_fast_breathing_indrawing_unknown",
+  "expected": "urgent",
+  "basis": "IMNCI sample: 44/min >= 40 for 1-5 years => PNEUMONIA (yellow -> urgent). Chest indrawing is NOT known to the caregiver (tests the 'unknown' path)",
+  "opening": "4 year old with cough for 5 days, breathing fast.",
+  "vignette": "Girl, 4 years old. Cough for 5 days. Counted 44 breaths per minute while calm. The caregiver has not looked at her chest and does not know whether it pulls in. No harsh noise when breathing. Low fever. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "AC_infant_severe_dehydration_signs",
+  "expected": "emergency",
+  "basis": "IMNCI sample: sunken eyes + skin pinch goes back very slowly (two signs) => SEVERE DEHYDRATION (pink)",
+  "opening": "9 month old with diarrhoea for 3 days.",
+  "vignette": "Boy, 9 months old. Watery diarrhoea for 3 days, many times a day. Eyes are sunken. Skin pinch on the belly goes back very slowly, more than 2 seconds. Still awake and drinking eagerly. Not lethargic. No convulsions, not vomiting everything. No cough. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "AD_fever_fast_breathing",
+  "expected": "urgent",
+  "basis": "IMNCI sample: 52/min >= 40 for 1-5 years => PNEUMONIA (yellow -> urgent)",
+  "opening": "3 year old with fever and fast breathing.",
+  "vignette": "Boy, 3 years old. Fever for 2 days and cough since yesterday. Counted 52 breaths per minute while calm. No chest indrawing, no stridor. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
+ },
+ {
+  "id": "AE_mild_cough_slight_fever",
+  "expected": "self_care",
+  "basis": "IMNCI sample: no fast breathing (32/min < 40), no danger sign => COUGH OR COLD; FEVER malaria unlikely (green)",
+  "opening": "2 year old with a mild cough and slight fever.",
+  "vignette": "Girl, 2 years old. Mild cough for 2 days and slight fever since yesterday, runny nose. Does not live in or visit a malaria area. Counted 32 breaths per minute while calm. No chest indrawing, no stridor. No convulsions, not vomiting everything, alert and active, drinking/breastfeeding normally. Eating well. No diarrhoea. No stiff neck. No medicines.",
+  "set": "extended"
  }
 ]
