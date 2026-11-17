@@ -277,3 +277,63 @@ def test_follow_up_questions_are_asked_even_when_summary_looks_complete():
     assert out["intake_complete"] is False and out["awaiting_user"] is True
     assert out["follow_up_questions"] == []
     assert llm.count("completion") == 0
+
+
+# ─── Phase 5: relevance judge runs in parallel with triage ──────────────────
+
+def test_judge_and_triage_run_in_parallel():
+    """With judge and triage each taking 0.4 s, the completing turn takes ~0.4 s, not ~0.8 s."""
+    import time as _time
+    from graph import create_graph, run_turn
+
+    def slow_judge(*a, **k):
+        _time.sleep(0.4)
+        return {"score": 4, "missing_aspects": []}
+
+    def slow_triage():
+        _time.sleep(0.4)
+        return triage(conf=0.9)
+
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["IMNCI classify cough"])],
+                              "TriageResult": [slow_triage]})
+    app = create_graph()
+    with stubbed(llm), patch("agents.retrieval.evaluate_relevance", side_effect=slow_judge):
+        t0 = _time.perf_counter()
+        r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+        elapsed = _time.perf_counter() - t0
+    assert r["is_complete"]
+    assert elapsed < 0.75, f"judge and triage did not overlap ({elapsed:.2f} s)"
+    assert llm.count("query_gen") == 0, "attempt 1 must use the extraction's search_queries"
+
+
+def test_judge_rejection_discards_speculative_triage_and_reformulates():
+    from graph import create_graph, run_turn
+
+    scores = iter([2, 4])  # attempt 1 rejected, attempt 2 accepted
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["first query"])],
+                              "TriageResult": [triage(TriageLevel.STANDARD, conf=0.9), triage(TriageLevel.URGENT, conf=0.9)]})
+    app = create_graph()
+    with stubbed(llm), patch("agents.retrieval.evaluate_relevance",
+                             side_effect=lambda *a, **k: {"score": next(scores), "missing_aspects": ["thresholds"]}):
+        r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+    st = r["state"]
+    assert r["is_complete"]
+    assert st["retrieval_attempts"] == 2
+    assert st["retrieval_queries"][0] == "first query" and len(st["retrieval_queries"]) == 2
+    assert llm.count("query_gen") == 1, "reformulation asks the LLM for new queries"
+    assert llm.count("structured:TriageResult") == 2
+    assert st["triage_result"].triage_level == TriageLevel.URGENT, "result from the accepted guidelines is used"
+
+
+def test_judge_rejects_every_attempt_stops_at_max_attempts():
+    from graph import create_graph, run_turn
+
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9, search_queries=["q1"])],
+                              "TriageResult": [triage(conf=0.9)]})
+    app = create_graph()
+    with stubbed(llm), patch("agents.retrieval.evaluate_relevance",
+                             side_effect=lambda *a, **k: {"score": 1, "missing_aspects": []}):
+        r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
+    assert r["is_complete"]
+    assert r["state"]["retrieval_attempts"] == 3
+    assert llm.count("structured:TriageResult") == 3

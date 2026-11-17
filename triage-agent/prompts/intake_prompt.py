@@ -50,6 +50,10 @@ Signs:
   drinking_poorly, drinks_eagerly (thirsty), restless_irritable, stiff_neck,
   chest_pain, difficulty_breathing_at_rest, signs_of_stroke (one-sided weakness/numbness, trouble speaking),
   severe_bleeding, confusion_or_unconscious, seizure, visual_disturbance
+SEARCH QUERIES (search_queries): 2-4 short clinical queries that would find the guideline
+section classifying this case, e.g. "IMNCI classify cough fast breathing chest indrawing child",
+"IMNCI diarrhoea dehydration classification sunken eyes skin pinch", "WHO PEN hypertension grade referral".
+
 Record a counted breathing rate in vital_signs.respiratory_rate and any measured blood pressure in
 vital_signs.blood_pressure_systolic / blood_pressure_diastolic.
 
@@ -160,6 +164,12 @@ FALLBACK_QUESTION = (
 )
 
 
+COMPLETION_MESSAGE = (
+    "Thank you. I have enough information and am now assessing the patient "
+    "against the clinical guidelines."
+)
+
+# Kept for reference / other frontends; the intake agent uses COMPLETION_MESSAGE.
 COMPLETION_SYSTEM = """You are a clinical intake assistant.
 The patient intake is complete. Write a brief, warm confirmation message (1 sentence) \
 telling the health worker you have enough information and are now analyzing the case.

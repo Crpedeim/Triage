@@ -114,7 +114,9 @@ def test_intake_does_not_complete_until_checklist_groups_asked():
 
     out3, llm3 = _intake(s, asked=["general_danger_signs", "breathing"])
     assert out3["intake_complete"] is True
-    assert llm3.count("completion") == 1
+    from prompts.intake_prompt import COMPLETION_MESSAGE
+    assert out3["messages"][0].content == COMPLETION_MESSAGE
+    assert llm3.count("completion") == 0  # Phase 5: fixed text, no LLM call
 
 
 def test_group_already_answered_is_not_asked():

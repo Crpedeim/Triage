@@ -32,6 +32,7 @@ load_dotenv()
 
 import gradio as gr
 from graph import create_graph, run_turn
+from rag.embeddings import warm_up as warm_up_embeddings
 from rag.store import count as store_count
 
 # ─── Initialise the graph once at startup ────────────────────────────────────
@@ -40,6 +41,11 @@ from rag.store import count as store_count
 print("[app] Initialising TriageAI graph...")
 APP = create_graph()
 print("[app] Graph ready.")
+
+# Load the embedding model before serving, so the first users do not pay the
+# cold model load inside their request (Phase 5).
+warm_up_embeddings()
+print("[app] Embedding model loaded.")
 
 # ─── Check knowledge base ─────────────────────────────────────────────────────
 KB_COUNT = store_count()

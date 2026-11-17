@@ -1,33 +1,29 @@
 """
-agents/retrieval.py — Retrieval Agent Node
+agents/retrieval.py — Retrieval Agent and Relevance Check nodes
 
 PURPOSE:
-Find the relevant clinical guideline chunks for the current patient case.
-Uses a self-correcting loop: retrieve → evaluate → refine if needed.
+Find the clinical guideline chunks for the current patient case, and judge
+whether they are relevant enough to triage on.
 
-INPUTS FROM STATE:
-  patient_summary   — structured patient data from Intake Agent
+TWO NODES (Phase 5 latency redesign):
+  retrieval_agent        ONE retrieval attempt per run:
+                           attempt 1 uses the search queries the intake
+                           extraction already produced (no extra LLM call);
+                           later attempts ask the LLM to reformulate, excluding
+                           queries already tried and naming what was missing.
+  relevance_check_agent  LLM-as-judge score (1-5) for the retrieved chunks.
 
-OUTPUTS TO STATE:
-  retrieved_guidelines   — list of serialized Document dicts (top relevant chunks)
-  retrieval_queries      — queries used (for debugging/display)
-  retrieval_sufficient   — True if good guidelines were found
+SELF-CORRECTING LOOP (now at graph level, and parallel):
+  retrieval → { relevance_check ∥ triage } → supervisor
+  The judge and the triage agent run IN PARALLEL on the same guidelines. If the
+  judge scores them < RELEVANCE_THRESHOLD and attempts remain, the supervisor
+  discards that (speculative) triage result and routes back to retrieval to
+  reformulate. If the judge accepts them, the triage result is used directly,
+  so the judge no longer adds a sequential LLM call. When the judge rejects,
+  the outcome is the same as the old sequential loop (retrieve → judge →
+  reformulate) at the cost of one extra triage call.
 
-SELF-CORRECTING LOOP:
-  Attempt 1: Generate queries → multi_query_search → evaluate relevance
-  If score < 3:  reformulate queries → search again
-  If score >= 3: proceed
-  After MAX_RETRIEVAL_ATTEMPTS: proceed with best available results
-
-WHY SELF-CORRECTION MATTERS:
-  Without it, a query like "cough in children" might retrieve generic
-  advice instead of the IMNCI pneumonia classification table.
-  The LLM-as-judge catches this and triggers a reformulation like
-  "IMNCI classify cough fast breathing chest indrawing" which retrieves
-  the right section.
-
-NOTE: The agent does NOT talk to the user. It operates entirely on
-the PatientSummary from shared state.
+NOTE: neither node talks to the user.
 """
 
 from __future__ import annotations
@@ -41,9 +37,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from llm import get_fast_llm
 from prompts.retrieval_prompt import query_generation_prompt
 from state import TriageState
+from rag.store import Document
 from tools.vector_search import (
     evaluate_relevance,
-    format_for_triage_agent,
     multi_query_search,
 )
 
@@ -52,91 +48,73 @@ RELEVANCE_THRESHOLD = 3
 
 
 def retrieval_agent(state: TriageState) -> dict:
-    """
-    Retrieval Agent node function for LangGraph.
-
-    Returns dict with keys: retrieved_guidelines, retrieval_queries, retrieval_sufficient
-    """
+    """One retrieval attempt. Returns retrieved_guidelines, retrieval_queries, retrieval_attempts."""
     summary = state.get("patient_summary")
+    attempt = state.get("retrieval_attempts", 0)
+    tried: list[str] = list(state.get("retrieval_queries") or [])
 
-    # Edge case: no patient summary yet (should not happen in normal flow)
     if summary is None:
-        return {
-            "retrieved_guidelines": [],
-            "retrieval_queries": [],
-            "retrieval_sufficient": False,
-        }
+        return {"retrieved_guidelines": [], "retrieval_queries": tried, "retrieval_sufficient": False,
+                "retrieval_attempts": attempt + 1, "retrieval_retry": False}
 
-    llm = get_fast_llm()
-    all_queries: list[str] = []
-    best_docs = []
-    best_score = 0
+    # ─── Queries ─────────────────────────────────────────────────────────
+    queries: list[str] = []
+    if attempt == 0:
+        # Produced by the intake extraction call: no extra round trip
+        queries = [q for q in (summary.search_queries or []) if q.strip() and q not in tried][:4]
+    if not queries:
+        queries = _llm_queries(summary, tried, state.get("retrieval_missing") or [])
+    if not queries:
+        queries = [q for q in _fallback_queries(summary) if q not in tried] or _fallback_queries(summary)
 
-    # Determine age-aware guideline filter
+    # ─── Search (age-aware filter, then unfiltered if empty) ─────────────
     guideline_type_filter = _get_guideline_type(summary)
-
-    for attempt in range(MAX_RETRIEVAL_ATTEMPTS):
-
-        # ─── Step 1: Generate search queries ──────────────────────────────
-        query_prompt = query_generation_prompt(summary)
-        response = llm.invoke([
-            SystemMessage(content="You are a clinical search query specialist. "
-                                  "Generate precise clinical search queries. "
-                                  "Return ONLY a JSON array of strings."),
-            HumanMessage(content=query_prompt),
-        ])
-
-        queries = _parse_queries(response.content)
-        if not queries:
-            # Fallback: build simple queries from patient summary
-            queries = _fallback_queries(summary)
-
-        # Deduplicate against already-tried queries
-        new_queries = [q for q in queries if q not in all_queries]
-        if not new_queries:
-            break
-        all_queries.extend(new_queries)
-
-        # ─── Step 2: Multi-query search ───────────────────────────────────
-        docs = multi_query_search(
-            queries=new_queries,
-            n_results_per_query=4,
-            guideline_type=guideline_type_filter,
-        )
-
-        if not docs:
-            # Try without the type filter (store may not have that type yet)
-            docs = multi_query_search(
-                queries=new_queries,
-                n_results_per_query=4,
-                guideline_type=None,
-            )
-
-        if not docs:
-            continue
-
-        # ─── Step 3: Evaluate relevance ───────────────────────────────────
-        patient_context = _build_patient_context(summary)
-        evaluation = evaluate_relevance(patient_context, docs)
-        score = evaluation.get("score", 0)
-
-        # Keep track of best results across attempts
-        if score > best_score:
-            best_score = score
-            best_docs = docs
-
-        if score >= RELEVANCE_THRESHOLD:
-            # Good enough — stop searching
-            break
-
-        # Score too low — log what's missing and try again with different queries
-        # The next iteration will generate new queries since old ones are in all_queries
+    docs = multi_query_search(queries=queries, n_results_per_query=4, guideline_type=guideline_type_filter)
+    if not docs:
+        docs = multi_query_search(queries=queries, n_results_per_query=4, guideline_type=None)
 
     return {
-        "retrieved_guidelines": [doc.to_dict() for doc in best_docs],
-        "retrieval_queries": all_queries,
-        "retrieval_sufficient": best_score >= RELEVANCE_THRESHOLD or len(best_docs) > 0,
+        "retrieved_guidelines": [doc.to_dict() for doc in docs],
+        "retrieval_queries": tried + [q for q in queries if q not in tried],
+        "retrieval_attempts": attempt + 1,
+        "retrieval_retry": False,
+        # Judged by relevance_check_agent, which runs in parallel with triage
+        "retrieval_score": None,
+        "retrieval_sufficient": False,
     }
+
+
+def relevance_check_agent(state: TriageState) -> dict:
+    """LLM-as-judge for the current guidelines. Runs in parallel with the triage agent."""
+    summary = state.get("patient_summary")
+    docs = [Document.from_dict(d) for d in (state.get("retrieved_guidelines") or [])]
+    if summary is None:
+        return {"retrieval_score": 1, "retrieval_sufficient": False, "retrieval_missing": ["no patient summary"]}
+    evaluation = evaluate_relevance(_build_patient_context(summary), docs)
+    score = int(evaluation.get("score", 1))
+    return {
+        "retrieval_score": score,
+        "retrieval_sufficient": score >= RELEVANCE_THRESHOLD,
+        "retrieval_missing": list(evaluation.get("missing_aspects") or []),
+    }
+
+
+def _llm_queries(summary, tried: list[str], missing: list[str]) -> list[str]:
+    """Ask the LLM for (re)formulated queries, excluding ones already tried."""
+    llm = get_fast_llm()
+    prompt = query_generation_prompt(summary)
+    if tried:
+        prompt += ("\n\nThese queries were already tried and did not retrieve the right guideline section; "
+                   "write DIFFERENT ones:\n" + "\n".join(f"- {q}" for q in tried))
+    if missing:
+        prompt += "\n\nThe previous results were missing: " + "; ".join(missing)
+    response = llm.invoke([
+        SystemMessage(content="You are a clinical search query specialist. "
+                              "Generate precise clinical search queries. "
+                              "Return ONLY a JSON array of strings."),
+        HumanMessage(content=prompt),
+    ])
+    return [q for q in _parse_queries(response.content) if q not in tried][:4]
 
 
 def _get_guideline_type(summary) -> str | None:

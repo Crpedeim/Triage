@@ -256,6 +256,14 @@ class PatientSummary(BaseModel):
             "for signs that were not asked about or that the caregiver did not know."
         )
     )
+    search_queries: list[str] = Field(
+        default_factory=list,
+        description=(
+            "2-4 short clinical search queries for finding the guideline section that "
+            "classifies this case, e.g. 'IMNCI classify cough fast breathing chest indrawing child'. "
+            "Used directly by the retrieval step (saves a separate LLM call)."
+        )
+    )
     completeness_score: float = Field(
         default=0.0,
         ge=0.0,
@@ -397,7 +405,11 @@ class TriageState(TypedDict):
     # ─── Retrieval Agent Output ───
     retrieved_guidelines: list[dict]             # Relevant guideline chunks (serialized)
     retrieval_queries: list[str]                 # Queries used (for debugging/display)
-    retrieval_sufficient: bool                   # Did retrieval find relevant content?
+    retrieval_sufficient: bool                   # Did the relevance judge accept the guidelines?
+    retrieval_attempts: int                      # Retrieval attempts in this cycle (max MAX_RETRIEVAL_ATTEMPTS)
+    retrieval_score: int | None                  # Relevance judge score 1-5 for the current guidelines
+    retrieval_missing: list[str]                 # What the judge said was missing (feeds reformulation)
+    retrieval_retry: bool                        # Supervisor rejected the guidelines; retrieve again
 
     # ─── Triage Agent Output ───
     triage_result: TriageResult | None           # Final triage decision
@@ -431,6 +443,10 @@ def create_initial_state() -> dict:
         "retrieved_guidelines": [],
         "retrieval_queries": [],
         "retrieval_sufficient": False,
+        "retrieval_attempts": 0,
+        "retrieval_score": None,
+        "retrieval_missing": [],
+        "retrieval_retry": False,
         "triage_result": None,
         "triage_confidence": 0.0,
         "follow_up_questions": [],

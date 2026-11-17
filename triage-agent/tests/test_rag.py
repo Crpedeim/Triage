@@ -734,3 +734,33 @@ class TestEndToEndRAG:
         if results:  # Skip assertion if no who_pen content available
             for doc in results:
                 assert doc.guideline_type == "who_pen"
+
+
+def test_concurrent_first_embedding_calls_load_model_once():
+    """Phase 5: N parallel first calls must load the model once (was N times)."""
+    import threading
+    import time
+    from unittest.mock import patch
+
+    import rag.embeddings as emb
+
+    loads = []
+
+    class FakeModel:
+        def encode(self, texts, batch_size=32, show_progress_bar=False):
+            import numpy as np
+            return np.zeros((len(texts), 384))
+
+    @emb.lru_cache(maxsize=1)
+    def slow_loader():
+        loads.append(1)
+        time.sleep(0.2)
+        return FakeModel()
+
+    with patch.object(emb, "_get_local_model", slow_loader), patch.dict("os.environ", {"EMBEDDING_PROVIDER": "local"}):
+        threads = [threading.Thread(target=emb.embed_query, args=(f"q{i}",)) for i in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+    assert len(loads) == 1

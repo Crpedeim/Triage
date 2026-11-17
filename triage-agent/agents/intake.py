@@ -26,7 +26,7 @@ FLOW INSIDE THE AGENT:
   3. If the age is known and a danger-sign checklist group applies that has
      not been asked or answered, ask that group's FIXED question (no LLM call)
   4. Else if complete (completeness >= threshold, or question budget used up)
-     → completion message, intake_complete=True
+     → fixed completion message (no LLM call), intake_complete=True
   5. Else → generate the next question with QUESTION_SYSTEM (never the
      extraction prompt) and validate it is a plain question
 
@@ -51,7 +51,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 import safety
 from llm import get_fast_llm
 from prompts.intake_prompt import (
-    COMPLETION_SYSTEM,
+    COMPLETION_MESSAGE,
     EXTRACTION_SYSTEM,
     FALLBACK_QUESTION,
     QUESTION_SYSTEM,
@@ -105,13 +105,10 @@ def intake_agent(state: TriageState) -> dict:
     asked_so_far = sum(1 for m in messages if isinstance(m, AIMessage))
     out_of_budget = asked_so_far >= MAX_INTAKE_QUESTIONS
     if (summary.is_complete or out_of_budget) and not follow_up_questions:
-        completion_response = llm.invoke([
-            SystemMessage(content=COMPLETION_SYSTEM),
-            HumanMessage(content=f"Patient summary: {summary.chief_complaint}. "
-                                  f"Completeness: {summary.completeness_score:.0%}"),
-        ])
+        # Fixed text (Phase 5): an LLM call here cost one sequential round trip
+        # on the turn the user waits longest for, to write one courtesy sentence.
         return {
-            "messages": [AIMessage(content=_text(completion_response.content))],
+            "messages": [AIMessage(content=COMPLETION_MESSAGE)],
             "patient_summary": summary,
             "intake_complete": True,
             "awaiting_user": False,

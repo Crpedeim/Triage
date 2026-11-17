@@ -95,19 +95,21 @@ def test_spans_per_agent_with_latency_tokens_and_cost(platform):
     agents = {s["name"]: s for s in t2["spans"] if s["type"] == "agent"}
     assert {"supervisor", "intake", "retrieval", "triage", "output"} <= set(agents)
     llm_spans = [s for s in t2["spans"] if s["type"] == "llm"]
-    # completing turn: intake extraction + completion, retrieval query gen, triage = 4 calls
-    # (relevance judge is patched out in stubbed())
-    assert len(llm_spans) == t2["metadata"]["llm_calls"] == 4
+    # completing turn: intake extraction, retrieval query gen (stub summary has no
+    # search_queries), triage = 3 calls (relevance judge is patched out in stubbed();
+    # Phase 5 made the completion message fixed text)
+    assert len(llm_spans) == t2["metadata"]["llm_calls"] == 3
     for s in llm_spans:
         assert s["parent_span_id"] in {a["span_id"] for a in agents.values()}
         assert s["usage"] == {"input_tokens": 100, "output_tokens": 20, "reasoning_tokens": 30, "total_tokens": 150}
         assert s["latency_ms"] >= 0 and s["model"] == "gemini-3.1-pro-preview"
         assert s["cost_usd"] == pytest.approx((100 * 2.0 + 50 * 12.0) / 1e6)
-    assert agents["intake"]["llm_calls"] == 2 and agents["triage"]["llm_calls"] == 1
-    assert agents["intake"]["usage"]["total_tokens"] == 300
+    assert agents["intake"]["llm_calls"] == 1 and agents["triage"]["llm_calls"] == 1
+    assert agents["retrieval"]["llm_calls"] == 1
+    assert agents["intake"]["usage"]["total_tokens"] == 150
     assert agents["supervisor"]["llm_calls"] == 0 and agents["supervisor"]["cost_usd"] == 0.0
-    assert t2["usage"]["total_tokens"] == 600
-    assert t2["cost_usd"] == pytest.approx(4 * (100 * 2.0 + 50 * 12.0) / 1e6)
+    assert t2["usage"]["total_tokens"] == 450
+    assert t2["cost_usd"] == pytest.approx(3 * (100 * 2.0 + 50 * 12.0) / 1e6)
     assert t2["latency_ms"] >= max(s["latency_ms"] for s in t2["spans"])
 
 

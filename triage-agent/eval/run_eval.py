@@ -53,7 +53,7 @@ from langchain_core.callbacks import BaseCallbackHandler  # noqa: E402
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage  # noqa: E402
 
 SEVERITY = {"self_care": 0, "standard": 1, "urgent": 2, "emergency": 3}
-NODE_NAMES = {"supervisor", "intake", "retrieval", "triage", "output"}
+NODE_NAMES = {"supervisor", "intake", "retrieval", "relevance_check", "triage", "output"}
 
 # Prices live in pricing.py (shared with tracing). Unpriced models → unknown cost.
 from pricing import PRICES_PER_M  # noqa: E402
@@ -191,10 +191,13 @@ def run_case_run_turn(app, case, caregiver, rec):
     transcript, cg_log = [("caregiver", case["opening"])], []
     sys_time, turns, status = 0.0, 0, "ok"
     msg = case["opening"]
+    rec.turn_times = []
     for _ in range(MAX_CAREGIVER_TURNS + 1):
         t0 = time.perf_counter()
         r = run_turn(app, thread_id, msg, config={"callbacks": [rec]})
-        sys_time += time.perf_counter() - t0
+        dt = time.perf_counter() - t0
+        sys_time += dt
+        rec.turn_times.append(round(dt, 3))
         if r["is_complete"]:
             break
         q = r["message"]
@@ -244,6 +247,7 @@ def run_case(case: dict, driver: str, caregiver: Caregiver) -> dict:
         intake_questions_asked=turns, system_wall_s=round(sys_time, 3),
         llm_calls=len(rec.calls), llm_errors=[c for c in rec.calls if "error" in c],
         per_model=per_model, node_times=rec.nodes, calls=rec.calls,
+        turn_times=getattr(rec, "turn_times", None),  # per run_turn() call (run_turn driver only)
         caregiver=dict(calls=len(cg_log), total_tokens=sum(c["total_tokens"] for c in cg_log),
                        wall_s=round(sum(c["latency_s"] for c in cg_log), 3)),
         transcript=transcript,
@@ -294,6 +298,7 @@ def summarise(results: list[dict], meta: dict) -> dict:
         tokens_per_triage=dict(median=statistics.median(toks) if toks else None,
                                p95_nearest_rank=_p95(toks), total=sum(toks)),
         llm_calls_per_triage=dict(median=statistics.median([r["llm_calls"] for r in results]) if results else None),
+        final_turn_latency_s=_final_turn(results),
         priced_cost_per_triage_usd=dict(
             low_median=round(statistics.median([c["priced_low"] for c in costs]), 6) if costs else None,
             high_median=round(statistics.median([c["priced_high"] for c in costs]), 6) if costs else None,
@@ -302,6 +307,14 @@ def summarise(results: list[dict], meta: dict) -> dict:
                  "total cost is unknown while any model is unpriced"),
         confusion=_confusion(results),
     )
+
+
+def _final_turn(results):
+    """Latency of the completing turn (intake complete → retrieval → triage), when recorded."""
+    xs = [r["turn_times"][-1] for r in results if r.get("turn_times")]
+    if not xs:
+        return None
+    return dict(median=round(statistics.median(xs), 2), p95_nearest_rank=_p95(xs), n=len(xs))
 
 
 def _confusion(results):
@@ -336,6 +349,9 @@ def main(argv=None):
         cases = [c for c in cases if c["id"] in args.ids]
 
     _ensure_knowledge_base()
+    # Mirror app.py: the server loads the embedding model before serving.
+    from rag.embeddings import warm_up
+    warm_up()
     from llm import get_llm_info
     caregiver = Caregiver()
     meta = dict(label=args.label, driver=args.driver, concurrency=args.concurrency,

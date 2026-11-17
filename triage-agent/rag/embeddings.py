@@ -26,6 +26,7 @@ Supported providers (set EMBEDDING_PROVIDER in .env):
 from __future__ import annotations
 
 import os
+import threading
 from functools import lru_cache
 from typing import Union
 
@@ -34,6 +35,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "local")
+
+# lru_cache is not atomic for concurrent FIRST calls: without this lock, N
+# parallel first requests each loaded their own copy of the model (measured:
+# 31-72 s extra per request for the first 4 parallel eval cases on a cold disk).
+_MODEL_LOCK = threading.Lock()
 
 
 @lru_cache(maxsize=1)
@@ -78,7 +84,8 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     provider = os.getenv("EMBEDDING_PROVIDER", "local")
 
     if provider == "local":
-        model = _get_local_model()
+        with _MODEL_LOCK:
+            model = _get_local_model()
         vectors = model.encode(texts, batch_size=32, show_progress_bar=False)
         return [v.tolist() for v in vectors]
 
@@ -122,6 +129,11 @@ def embed_query(query: str) -> list[float]:
     """
     embeddings = embed_texts([query])
     return embeddings[0]
+
+
+def warm_up() -> None:
+    """Load the embedding model now (call at process start) so no request pays the cold load."""
+    embed_query("warm up")
 
 
 def get_embedding_dimension() -> int:

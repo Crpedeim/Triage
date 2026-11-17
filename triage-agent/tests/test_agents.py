@@ -372,8 +372,12 @@ class TestRetrievalAgent:
     @patch("agents.retrieval.multi_query_search")
     @patch("agents.retrieval.evaluate_relevance")
     def test_returns_guidelines_on_good_retrieval(self, mock_eval, mock_search, mock_get_llm):
-        """Good retrieval (score >= 3) → returns guidelines and sufficient=True."""
-        from agents.retrieval import retrieval_agent
+        """Retrieval returns guidelines; the separate relevance_check node judges them.
+
+        Phase 5: judging moved out of retrieval_agent into relevance_check_agent,
+        which the graph runs in parallel with triage.
+        """
+        from agents.retrieval import relevance_check_agent, retrieval_agent
         from rag.store import Document
 
         mock_get_llm.return_value = self._mock_query_llm([
@@ -395,44 +399,47 @@ class TestRetrievalAgent:
         state["patient_summary"] = make_pneumonia_summary()
         result = retrieval_agent(state)
 
-        assert result["retrieval_sufficient"] is True
         assert len(result["retrieved_guidelines"]) > 0
         assert len(result["retrieval_queries"]) > 0
+        assert result["retrieval_attempts"] == 1
+        mock_eval.assert_not_called()  # judging is a separate node now
+
+        state.update(result)
+        judged = relevance_check_agent(state)
+        assert judged["retrieval_sufficient"] is True and judged["retrieval_score"] == 4
 
     @patch("agents.retrieval.get_fast_llm")
     @patch("agents.retrieval.multi_query_search")
-    @patch("agents.retrieval.evaluate_relevance")
-    def test_retries_on_low_relevance(self, mock_eval, mock_search, mock_get_llm):
-        """Low relevance score → agent tries different queries."""
+    def test_first_attempt_uses_extraction_queries_without_llm(self, mock_search, mock_get_llm):
+        """Phase 5: attempt 1 uses PatientSummary.search_queries; no query-generation LLM call."""
         from agents.retrieval import retrieval_agent
-        from rag.store import Document
 
-        call_count = [0]
+        mock_search.return_value = []
+        state = create_initial_state()
+        state["patient_summary"] = make_pneumonia_summary().model_copy(
+            update={"search_queries": ["IMNCI classify cough chest indrawing"]})
+        result = retrieval_agent(state)
+        assert result["retrieval_queries"] == ["IMNCI classify cough chest indrawing"]
+        mock_get_llm.assert_not_called()
 
-        def mock_llm_side_effect(*args, **kwargs):
-            import json
-            call_count[0] += 1
-            mock_response = MagicMock()
-            mock_response.content = json.dumps([f"query attempt {call_count[0]}"])
-            return mock_response
+    @patch("agents.retrieval.get_fast_llm")
+    @patch("agents.retrieval.multi_query_search")
+    def test_retries_on_low_relevance(self, mock_search, mock_get_llm):
+        """A retry attempt asks the LLM for NEW queries, excluding tried ones and naming what was missing."""
+        from agents.retrieval import retrieval_agent
 
-        mock_llm = MagicMock()
-        mock_llm.invoke.side_effect = mock_llm_side_effect
-        mock_get_llm.return_value = mock_llm
-
-        mock_search.return_value = [
-            Document(content="irrelevant content", metadata={"source_file": "test.pdf", "section": "test",
-                     "page_number": 1, "chunk_index": 0, "guideline_type": "imnci"}, score=0.9, id="xyz")
-        ]
-        mock_eval.return_value = {"score": 1, "sufficient": False,
-                                   "missing_aspects": ["classification criteria"], "reasoning": "Not relevant"}
-
+        mock_get_llm.return_value = self._mock_query_llm(["old query", "new query attempt 2"])
+        mock_search.return_value = []
         state = create_initial_state()
         state["patient_summary"] = make_pneumonia_summary()
+        state.update(retrieval_attempts=1, retrieval_queries=["old query"],
+                     retrieval_missing=["classification criteria"])
         result = retrieval_agent(state)
 
-        # Should have tried multiple query sets
-        assert len(result["retrieval_queries"]) > 1
+        assert result["retrieval_queries"] == ["old query", "new query attempt 2"]
+        assert result["retrieval_attempts"] == 2
+        prompt = mock_get_llm.return_value.invoke.call_args[0][0][1].content
+        assert "old query" in prompt and "classification criteria" in prompt
 
     @patch("agents.retrieval.get_fast_llm")
     @patch("agents.retrieval.multi_query_search")
@@ -488,6 +495,7 @@ class TestRetrievalAgent:
         result = retrieval_agent(state)
         assert result["retrieved_guidelines"] == []
         assert result["retrieval_sufficient"] is False
+        assert result["retrieval_attempts"] == 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

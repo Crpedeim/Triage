@@ -12,7 +12,8 @@ GRAPH STRUCTURE:
   Entry point → supervisor
   supervisor → intake | retrieval | triage | output | END  (conditional edges)
   intake     → supervisor  (unconditional)
-  retrieval  → supervisor  (unconditional)
+  retrieval  → relevance_check AND triage  (parallel fan-out, Phase 5)
+  relevance_check → supervisor
   triage     → supervisor  (unconditional)
   output     → END
 
@@ -75,7 +76,7 @@ from checkpointing import make_checkpointer
 from langgraph.graph import END, StateGraph
 
 from agents.intake import intake_agent
-from agents.retrieval import retrieval_agent
+from agents.retrieval import relevance_check_agent, retrieval_agent
 from agents.supervisor import route_next, supervisor
 from agents.triage import triage_agent
 import tracing
@@ -129,6 +130,7 @@ def create_graph(checkpointer=None):
     graph.add_node("supervisor", supervisor)
     graph.add_node("intake", intake_agent)
     graph.add_node("retrieval", retrieval_agent)
+    graph.add_node("relevance_check", relevance_check_agent)
     graph.add_node("triage", triage_agent)
     graph.add_node("output", _format_output)
 
@@ -141,8 +143,15 @@ def create_graph(checkpointer=None):
     # Every agent, after completing its work, returns to the supervisor.
     # The supervisor then re-reads state and decides the next step.
     graph.add_edge("intake", "supervisor")
-    graph.add_edge("retrieval", "supervisor")
     graph.add_edge("triage", "supervisor")
+
+    # ─── Parallel fan-out after retrieval (Phase 5) ───────────────────────
+    # relevance_check (LLM judge) and triage run in the SAME superstep on the
+    # same guidelines; the supervisor runs once after both have finished and
+    # discards the triage result if the judge rejected the guidelines.
+    graph.add_edge("retrieval", "relevance_check")
+    graph.add_edge("retrieval", "triage")
+    graph.add_edge("relevance_check", "supervisor")
 
     # ─── Terminal edge ────────────────────────────────────────────────────
     graph.add_edge("output", END)

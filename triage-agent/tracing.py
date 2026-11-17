@@ -62,7 +62,7 @@ from pricing import call_cost
 
 log = logging.getLogger("triage.tracing")
 
-AGENT_NODES = {"supervisor", "intake", "retrieval", "triage", "output"}
+AGENT_NODES = {"supervisor", "intake", "retrieval", "relevance_check", "triage", "output"}
 
 
 def _iso(ts: float) -> str:

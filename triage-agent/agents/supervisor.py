@@ -10,9 +10,14 @@ ROUTING LOGIC (route_next):
   awaiting_user=True               → "end"   (intake asked a question; this run
                                               ends and the next user message
                                               starts a new run on the saved state)
+  retrieval_retry=True             → "retrieval" (judge rejected the guidelines)
   intake_complete=False            → "intake"
-  intake complete, no guidelines   → "retrieval"
-  guidelines present, no result    → "triage"
+  intake complete, no retrieval    → "retrieval"  (graph then runs
+                                                   relevance_check ∥ triage)
+  guidelines present, no result    → "triage"     (fallback path)
+  result, but judge score < threshold
+    and retrieval attempts left    → "retrieval"  (discard speculative triage,
+                                                   reformulate queries)
   result, confidence >= threshold  → "output"
   result, confidence < threshold,
     cycles left                    → "intake"  (FEEDBACK LOOP)
@@ -34,6 +39,9 @@ from __future__ import annotations
 
 from state import CONFIDENCE_THRESHOLD, Phase, TriageState
 
+MAX_RETRIEVAL_ATTEMPTS = 3
+RELEVANCE_THRESHOLD = 3
+
 
 def supervisor(state: TriageState) -> dict:
     """
@@ -45,6 +53,18 @@ def supervisor(state: TriageState) -> dict:
     """
     next_agent = route_next(state)
     update: dict = {"current_agent": next_agent}
+
+    if next_agent == "retrieval" and _guidelines_rejected(state):
+        # The relevance judge (run in parallel with triage) rejected these
+        # guidelines: drop the speculative triage result and retrieve again.
+        update.update(
+            phase=Phase.RETRIEVAL.value,
+            retrieval_retry=True,
+            triage_result=None,
+            triage_confidence=0.0,
+            follow_up_questions=[],
+        )
+        return update
 
     if next_agent == "intake":
         if _is_low_confidence_loop_back(state):
@@ -59,6 +79,10 @@ def supervisor(state: TriageState) -> dict:
                 retrieved_guidelines=[],
                 retrieval_queries=[],
                 retrieval_sufficient=False,
+                retrieval_attempts=0,
+                retrieval_score=None,
+                retrieval_missing=[],
+                retrieval_retry=False,
             )
         else:
             update["phase"] = Phase.INTAKE.value
@@ -76,6 +100,17 @@ def supervisor(state: TriageState) -> dict:
     return update
 
 
+def _guidelines_rejected(state: TriageState) -> bool:
+    """Judge scored the current guidelines below threshold and attempts remain."""
+    score = state.get("retrieval_score")
+    return (
+        state.get("triage_result") is not None
+        and score is not None
+        and score < RELEVANCE_THRESHOLD
+        and state.get("retrieval_attempts", 0) < MAX_RETRIEVAL_ATTEMPTS
+    )
+
+
 def _is_low_confidence_loop_back(state: TriageState) -> bool:
     return (
         state.get("triage_result") is not None
@@ -91,17 +126,20 @@ def route_next(state: TriageState) -> str:
     """
     if state.get("awaiting_user", False):
         return "end"
+    if state.get("retrieval_retry", False):
+        return "retrieval"
 
     intake_complete: bool = state.get("intake_complete", False)
     retrieved_guidelines: list = state.get("retrieved_guidelines", [])
-    retrieval_sufficient: bool = state.get("retrieval_sufficient", False)
     triage_result = state.get("triage_result")
     triage_confidence: float = state.get("triage_confidence", 0.0)
     cycle_count: int = state.get("cycle_count", 0)
     max_cycles: int = state.get("max_cycles", 3)
 
-    # Triage has produced a result: accept it, or loop back for more information.
+    # Triage has produced a result: check the judge, then accept or loop back.
     if triage_result is not None:
+        if _guidelines_rejected(state):
+            return "retrieval"
         if triage_confidence >= CONFIDENCE_THRESHOLD:
             return "output"
         if cycle_count < max_cycles - 1:
@@ -111,7 +149,7 @@ def route_next(state: TriageState) -> str:
     if not intake_complete:
         return "intake"
 
-    if not retrieval_sufficient and not retrieved_guidelines:
+    if state.get("retrieval_attempts", 0) == 0 and not retrieved_guidelines:
         return "retrieval"
 
     return "triage"
