@@ -729,7 +729,7 @@ median.
 Tests: 261 passed, 4 skipped, 1 failed (the tracing test that also fails on
 untouched `main` on this machine).
 
-## R2 Phase 3: Postgres persistence (IN PROGRESS, not finished)
+## R2 Phase 3: Postgres persistence (commits `9165957` and this one)
 
 Done and measured:
 - Neon Postgres (PostgreSQL 18.7, AWS us-east-1), **direct** (non-pooled)
@@ -753,9 +753,30 @@ Done and measured:
   messages from Neon, and the next answer completed the triage: EMERGENCY,
   citing WHO IMCI handbook 7.2.
 
-NOT finished:
-- **2 instances:** revision `00008` ran with min=max=2 and no session
-  affinity. Through `gcloud run services proxy`, every turn after the first
-  went to one instance (`c20a056a`), so cross-instance reads were NOT shown.
-  The third turn did not finish within 126 s; cause NOT investigated. The
-  service was set back to min 0 / max 1.
+**2 instances.**
+- First attempt (revision `00008`, min = max = 2, session affinity OFF): a
+  turn hung. Request logs show why: its `POST /gradio_api/queue/join` went to
+  instance `c20a056a` and the matching result stream
+  `GET /gradio_api/queue/data` to `77d1c9be`. Gradio's job queue is
+  in-process, so the stream waited until Cloud Run's 300 s timeout
+  (`queue/data … 299.999733s`). **Conclusion: with more than one instance,
+  session affinity must stay ON** (the deploy script sets it). Affinity keeps
+  one browser on one instance; Postgres covers turns that end up on another
+  instance (scale-down, restart, redeploy, affinity loss).
+- With affinity ON (min = max = 2), four fresh clients all landed on the
+  same idle instance, so routing cannot be relied on to cross instances.
+- Deterministic test, `deploy/multiinstance_check.py`. Each turn of one
+  conversation (one thread id) goes through a new `gradio_client.Client`,
+  rotating over two tagged revision URLs of the same service (same image, same
+  Neon database). The serving instance of each turn comes from the request
+  logs:
+
+  | Run | turn 1 | turn 2 | turn 3 | restore | Result |
+  |---|---|---|---|---|---|
+  | 1 | `6446addb` (rev 10) 7.16 s | `fcb6e017` (rev 12) 15.52 s | `6446addb` 21.03 s | `fcb6e017` 1.00 s | 2 instances; 6/6 messages restored; assessment complete (95%) |
+  | 2 | `f216ad3a` (rev 12) 17.64 s | `6446addb` (rev 10) 11.62 s | `fcb6e017` (rev 12) 29.99 s | `6446addb` 0.97 s | 3 instances (2 of the same revision); 6/6 restored; card **EMERGENCY** |
+
+  Every turn continued from state written by a different instance. Case A
+  (3-year-old, fast breathing, chest indrawing) ended EMERGENCY as expected.
+- Afterwards the tags were removed and `triage-ai-bench` was set back to
+  min 0 / max 1.
