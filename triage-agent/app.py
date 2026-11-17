@@ -14,8 +14,8 @@ Each tab gets a unique thread_id so conversations don't cross-contaminate.
 
 FIRST RUN:
   Before launching, you need a populated vector store:
-    python -m rag.ingest --sample     # Quick start with sample data
-    python -m rag.ingest              # Full ingestion (needs PDFs in rag/guidelines/)
+    python -m rag.fetch_guidelines && python -m rag.build_kb   # WHO guidelines (the Docker build does this)
+    python -m rag.ingest --sample     # quick start: the 8 curated excerpts only
 
   Set your LLM API key in .env:
     ANTHROPIC_API_KEY=your-key-here
@@ -55,9 +55,32 @@ if BROWSER_STATE_SECRET is None:
 # ─── Check knowledge base ─────────────────────────────────────────────────────
 KB_COUNT = store_count()
 if KB_COUNT == 0:
-    print("[app] ⚠️  Vector store is empty. Run: python -m rag.ingest --sample")
+    print("[app] ⚠️  Vector store is empty. Run: python -m rag.fetch_guidelines && python -m rag.build_kb")
 else:
     print(f"[app] Knowledge base: {KB_COUNT} guideline chunks loaded.")
+
+
+# ─── Guideline attribution ────────────────────────────────────────────────────
+
+def _attribution_markdown() -> str:
+    """Footer text built from rag/guidelines/sources.json (titles, years, licences, links)."""
+    import json
+
+    manifest = Path(__file__).parent / "rag" / "guidelines" / "sources.json"
+    try:
+        docs = json.loads(manifest.read_text(encoding="utf-8"))["documents"]
+    except Exception:
+        return ""
+    items = [
+        f"[{d['title']}]({d['iris_handle']}). {d['publisher']}, {d['year']}. {d['licence']}"
+        for d in docs
+    ]
+    return (
+        "**Guideline sources.** Knowledge base built from: "
+        + " · ".join(items)
+        + ". Text is extracted and summarised automatically and may contain errors. "
+        "This prototype is not affiliated with or endorsed by WHO."
+    )
 
 
 # ─── Chat handler ─────────────────────────────────────────────────────────────
@@ -85,7 +108,7 @@ def chat(
     if KB_COUNT == 0:
         warning = (
             "⚠️ **Knowledge base is empty.**\n\n"
-            "Run this command first:\n```\npython -m rag.ingest --sample\n```\n"
+            "Run this command first:\n```\npython -m rag.fetch_guidelines && python -m rag.build_kb\n```\n"
             "Then restart the app."
         )
         history = history + [{"role": "user", "content": user_message},
@@ -160,7 +183,7 @@ with gr.Blocks(
     gr.Markdown(
         "# 🏥 TriageAI\n"
         "**Multi-Agent Clinical Triage for Frontline Health Workers**  \n"
-        "*Powered by WHO/IMNCI guidelines · LangGraph · Claude*"
+        "*Retrieval over WHO IMCI and WHO PEN guideline text · LangGraph*"
     )
 
     # ─── Session state (invisible, per-tab) ──────────────────────────────
@@ -230,6 +253,9 @@ with gr.Blocks(
             "convulsions etc.) always trigger URGENT/EMERGENCY classification, "
             "regardless of other findings."
         )
+
+    # ─── Guideline attribution (always visible) ──────────────────────────
+    gr.Markdown(_attribution_markdown(), elem_classes=["status-bar"])
 
     # ─── Event handlers ──────────────────────────────────────────────────
 

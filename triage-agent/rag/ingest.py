@@ -283,7 +283,7 @@ def ingest_pdf(pdf_path: Path, force: bool = False) -> int:
     return added
 
 
-def ingest_sample_data() -> int:
+def curated_chunks() -> list[dict]:
     """
     Ingest a small set of sample clinical text for testing.
 
@@ -294,7 +294,7 @@ def ingest_sample_data() -> int:
     Run this if you don't have the PDF yet:
         python -m rag.ingest --sample
     """
-    sample_chunks = [
+    return [
         {
             "text": (
                 "ASSESS AND CLASSIFY THE SICK CHILD AGE 2 MONTHS UP TO 5 YEARS\n\n"
@@ -488,6 +488,13 @@ def ingest_sample_data() -> int:
         },
     ]
 
+
+def ingest_sample_data() -> int:
+    """
+    Ingest only the curated excerpts (tests and quick local runs).
+    The production knowledge base is built by rag/build_kb.py from the WHO PDFs.
+    """
+    sample_chunks = curated_chunks()
     print(f"\n[ingest] Loading sample clinical data ({len(sample_chunks)} chunks)...")
     texts = [c["text"] for c in sample_chunks]
     metadatas = [c["metadata"] for c in sample_chunks]

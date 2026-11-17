@@ -1,0 +1,4 @@
+
+# WHO guideline PDFs: downloaded at build time (rag/fetch_guidelines.py), never committed
+rag/guidelines/*.pdf
+rag/guidelines/*.part

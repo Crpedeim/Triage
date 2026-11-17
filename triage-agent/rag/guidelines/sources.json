@@ -1,0 +1,87 @@
+{
+  "_comment": "WHO guideline PDFs used for the knowledge base. The PDFs are NOT committed (the two IMCI documents are 'All rights reserved'); rag/fetch_guidelines.py downloads them from WHO IRIS and checks sha256. Licences were read from each PDF's copyright page and the IRIS item record on 2026-11-17. Page numbers are PDF page numbers (1-based).",
+  "documents": [
+    {
+      "id": "imci_chart_booklet_2014",
+      "file": "imci_chart_booklet_2014.pdf",
+      "title": "Integrated Management of Childhood Illness: chart booklet",
+      "short_title": "WHO IMCI chart booklet (2014)",
+      "publisher": "World Health Organization",
+      "year": 2014,
+      "isbn": "9789241506823",
+      "iris_handle": "https://iris.who.int/handle/10665/104772",
+      "pdf_url": "https://iris.who.int/bitstreams/dfe9634a-da9b-46bb-a1eb-1b5faa09ff63/download",
+      "sha256": "7018498db592d44539f773c23db630e0ab0b3123485b0dd8ce1a41f830beb537",
+      "bytes": 5304057,
+      "pages": 80,
+      "licence": "© World Health Organization 2014. All rights reserved.",
+      "licence_note": "No open licence. The PDF is downloaded from WHO at image build time and is not redistributed in this repository.",
+      "guideline_type": "imnci",
+      "extractor": "imci_chart_booklet",
+      "page_roles": {
+        "front_matter": [[1, 4]],
+        "recording_forms": [[64, 71]],
+        "growth_charts": [[72, 77]]
+      }
+    },
+    {
+      "id": "imci_handbook_2005",
+      "file": "imci_handbook_2005.pdf",
+      "title": "Handbook: IMCI integrated management of childhood illness",
+      "short_title": "WHO IMCI handbook (2005)",
+      "publisher": "World Health Organization",
+      "year": 2005,
+      "isbn": "9241546441",
+      "iris_handle": "https://iris.who.int/handle/10665/42939",
+      "pdf_url": "https://iris.who.int/bitstreams/6db9960b-5dd9-4a8e-82de-e20ba2deaa69/download",
+      "sha256": "d0f9cf6a0e0fcf85932126a80e9f5215e0828d63d4106e7bb312c021d84976bd",
+      "bytes": 1299724,
+      "pages": 173,
+      "licence": "© World Health Organization 2005. All rights reserved.",
+      "licence_note": "No open licence. The PDF is downloaded from WHO at image build time and is not redistributed in this repository.",
+      "guideline_type": "imnci",
+      "extractor": "document",
+      "page_roles": {
+        "front_matter": [[1, 10]],
+        "recording_forms": [[161, 164]],
+        "mothers_card": [[165, 166]]
+      }
+    },
+    {
+      "id": "who_pen_2020",
+      "file": "who_pen_2020.pdf",
+      "title": "WHO package of essential noncommunicable (PEN) disease interventions for primary health care",
+      "short_title": "WHO PEN (2020)",
+      "publisher": "World Health Organization",
+      "year": 2020,
+      "isbn": "9789240009226",
+      "iris_handle": "https://iris.who.int/handle/10665/334186",
+      "pdf_url": "https://iris.who.int/bitstreams/b9f09202-a320-4c07-ba2c-afe0d1186339/download",
+      "sha256": "a09cc0ea4b39fd6ebfceb4d73f20bee7c4a7baeb3ae60150160cad646d6ec7e6",
+      "bytes": 2584724,
+      "pages": 85,
+      "licence": "CC BY-NC-SA 3.0 IGO",
+      "licence_url": "https://creativecommons.org/licenses/by-nc-sa/3.0/igo",
+      "licence_note": "Non-commercial use with attribution; adaptations must be shared under the same or an equivalent licence; no suggestion of WHO endorsement.",
+      "guideline_type": "who_pen",
+      "extractor": "document",
+      "page_roles": {
+        "front_matter": [[1, 7]],
+        "programme_introduction": [[8, 12]],
+        "risk_charts": [[19, 19]],
+        "implementation_and_annexes": [[68, 85]]
+      }
+    }
+  ],
+  "curated_fallback": {
+    "_comment": "Topics of the hand-written excerpts in rag/ingest.py (curated_chunks) and the PDF pages that cover them. A curated excerpt is kept only if one of its pages extracts badly (or is missing).",
+    "ASSESS AND CLASSIFY COUGH OR DIFFICULT BREATHING": {"imci_chart_booklet_2014": [6]},
+    "GENERAL DANGER SIGNS": {"imci_chart_booklet_2014": [5]},
+    "ASSESS AND CLASSIFY DIARRHOEA": {"imci_chart_booklet_2014": [7]},
+    "ASSESS AND CLASSIFY FEVER": {"imci_chart_booklet_2014": [8]},
+    "FAST BREATHING THRESHOLDS": {"imci_chart_booklet_2014": [6], "imci_handbook_2005": [31]},
+    "CHEST INDRAWING DEFINITION": {"imci_handbook_2005": [31]},
+    "CARDIOVASCULAR RISK MANAGEMENT": {"who_pen_2020": [16, 17, 18, 20, 21, 22, 23]},
+    "DIABETES RISK ASSESSMENT": {"who_pen_2020": [26, 27, 28]}
+  }
+}

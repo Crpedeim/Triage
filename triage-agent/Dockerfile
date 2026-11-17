@@ -5,9 +5,13 @@
 #   docker build -t triage-ai .
 #   docker run -p 8080:8080 -e LLM_PROVIDER=vertexai -e GOOGLE_CLOUD_PROJECT=... triage-ai
 #
-# The embedding model (all-MiniLM-L6-v2) and the sample guideline knowledge base
-# are baked into the image, so the running service never downloads from
-# Hugging Face and cold starts do not pay the ~90 MB model download.
+# The embedding model (all-MiniLM-L6-v2) and the guideline knowledge base are
+# built into the image at BUILD time: the WHO PDFs listed in
+# rag/guidelines/sources.json are downloaded from WHO IRIS, sha256-checked,
+# extracted (table-aware), chunked and embedded into ChromaDB. The running
+# service never downloads from Hugging Face or WHO and never ingests at
+# startup. The PDFs are not in the repository (two are "All rights reserved"),
+# so the build needs network access to iris.who.int.
 #
 # Optional build secret "ca": an extra CA bundle used ONLY during the build
 # (for TLS-intercepting build networks). It is never written to an image layer.
@@ -37,11 +41,15 @@ RUN --mount=type=secret,id=ca,required=false \
 
 COPY . .
 
-# Bake the embedding model and the sample knowledge base into the image.
+# Bake the embedding model and the WHO guideline knowledge base into the image.
+# build_kb writes its page/chunk report to /opt/chroma_db/kb_report.json.
+# The PDFs are deleted afterwards: only the derived vector store ships.
 RUN --mount=type=secret,id=ca,required=false \
     if [ -f /run/secrets/ca ]; then export REQUESTS_CA_BUNDLE=/run/secrets/ca SSL_CERT_FILE=/run/secrets/ca; fi; \
     python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" \
- && python -m rag.ingest --sample
+ && python -m rag.fetch_guidelines \
+ && python -m rag.build_kb \
+ && rm -f rag/guidelines/*.pdf
 
 # No network access to Hugging Face at runtime
 ENV HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1

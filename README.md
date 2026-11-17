@@ -134,7 +134,8 @@ triage-agent/
   tracing.py     per-turn traces with per-agent spans → POST /api/v1/traces
   pricing.py     model prices (unknown price → unknown cost, never $0)
   llm.py         providers: anthropic (default), openai(-compatible), groq, together, ollama, vertexai
-  rag/           embeddings · ingest · Chroma store
+  rag/           fetch_guidelines · pdf_extract (table-aware) · build_kb · embeddings · Chroma store
+  rag/guidelines/sources.json   WHO documents: URLs, sha256, licences, page roles
   prompts/       per-agent prompts
   app.py         Gradio UI
   eval/          cases.json (31), run_eval.py, compare.py, profile.py, results/
@@ -150,7 +151,9 @@ RESUME_FACTS.md  verified facts only
 ```bash
 cd triage-agent
 pip install -r requirements-dev.txt
-python -m rag.ingest --sample          # build the sample knowledge base
+python -m rag.fetch_guidelines         # download the WHO PDFs (sha256-checked)
+python -m rag.build_kb                 # extract, chunk, embed -> ChromaDB
+# or: python -m rag.ingest --sample    # only the 8 hand-written excerpts
 python app.py                          # Gradio UI on :7860
 pytest                                 # test suite
 ```
@@ -170,6 +173,26 @@ export LLM_PROVIDER=openai OPENAI_API_KEY=<gemini key> \
 
 Container and Cloud Run (Gemini via Vertex AI): see
 [`triage-agent/deploy/CLOUD_RUN.md`](triage-agent/deploy/CLOUD_RUN.md).
+
+## Guideline sources and licences
+
+The knowledge base is built from these World Health Organization publications,
+downloaded from WHO IRIS when the container image is built (exact file URLs,
+sha256 hashes and page roles are in
+[`triage-agent/rag/guidelines/sources.json`](triage-agent/rag/guidelines/sources.json)):
+
+| Document | Source | Licence |
+|---|---|---|
+| *Integrated Management of Childhood Illness: chart booklet.* WHO, 2014 (ISBN 9789241506823) | [iris.who.int/handle/10665/104772](https://iris.who.int/handle/10665/104772) | © WHO 2014, all rights reserved |
+| *Handbook: IMCI integrated management of childhood illness.* WHO, 2005 (ISBN 9241546441) | [iris.who.int/handle/10665/42939](https://iris.who.int/handle/10665/42939) | © WHO 2005, all rights reserved |
+| *WHO package of essential noncommunicable (PEN) disease interventions for primary health care.* WHO, 2020 (ISBN 9789240009226) | [iris.who.int/handle/10665/334186](https://iris.who.int/handle/10665/334186) | [CC BY-NC-SA 3.0 IGO](https://creativecommons.org/licenses/by-nc-sa/3.0/igo) |
+
+The two IMCI documents carry no open licence, so this repository does **not**
+contain the PDFs or text extracted from them; it only links to WHO and
+downloads them at build time. WHO PEN may be reused non-commercially with
+attribution, and adaptations must keep the same licence. This project is not
+affiliated with or endorsed by WHO. "IMNCI" in the code is India's adaptation
+of WHO IMCI; the documents used here are the WHO IMCI originals.
 
 ## Tech
 
