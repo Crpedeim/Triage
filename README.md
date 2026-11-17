@@ -1,131 +1,179 @@
 # TriageAI — Multi-Agent Clinical Triage System
 
-A multi-agent pediatric triage assistant built on **LangGraph**. It interviews a caregiver about a child's symptoms, retrieves relevant clinical guidelines, reasons over them, and produces a structured triage recommendation — all coordinated by a supervisor agent over a shared, type-safe state.
+A multi-agent triage assistant for community health workers, built on
+**LangGraph**. It interviews the health worker or caregiver about a patient,
+checks a fixed list of IMNCI danger signs, retrieves the relevant clinical
+guideline text, and produces a structured triage card at one of four levels:
+**Emergency**, **Urgent**, **Standard** or **Self-care**.
 
-> **Disclaimer:** an educational project, not a medical device. Triage logic is grounded in published IMNCI guidance but must not be used for real clinical decisions.
-
----
-
-## What it does
-
-Given a free-text complaint (e.g. *"3-year-old has had a cough for 4 days and is breathing fast"*), the system:
-1. **Interviews** the caregiver, asking one focused follow-up question at a time until it has enough information.
-2. **Retrieves** matching clinical guidelines from a vector store (RAG).
-3. **Reasons** over symptoms + guidelines to classify severity.
-4. **Outputs** a structured triage card with one of four levels mapped to **IMNCI** classifications: **Emergency** (immediate referral), **Urgent** (same-day), **Standard** (48–72h), or **Self-care** (home management).
+> **Disclaimer:** an educational prototype, not a medical device. It must not
+> be used for real clinical decisions. The evaluation suite is self-written
+> (see below), not a clinical validation.
 
 ---
-
-<!-- ============================================================= -->
-<!-- Paste these two sections into your README where indicated.    -->
-<!-- GitHub renders the Mermaid diagram natively — no image file.  -->
-<!-- ============================================================= -->
 
 ## Architecture
 
-A **hub-and-spoke multi-agent graph** built on LangGraph. The supervisor is the hub; every agent reports back to it, and the supervisor alone decides who runs next. Agents never call each other directly — which keeps routing in one place and each agent independently testable.
+A hub-and-spoke LangGraph graph. The deterministic supervisor (pure Python,
+no LLM) decides every route. **Each user message is one graph run** on the
+session's checkpointed state; the run ends when intake asks a question.
 
 ```mermaid
 graph TD
-    START([User message]) --> SUP{{Supervisor<br/>router}}
+    START([User message]) --> SUP{{Supervisor<br/>deterministic router}}
 
-    SUP -->|intake incomplete| INT[Intake Agent<br/>symptom interview]
-    SUP -->|needs guidelines| RET[Retrieval Agent<br/>RAG over guidelines]
-    SUP -->|ready to assess| TRI[Triage Agent<br/>clinical reasoner]
+    SUP -->|interview not complete| INT[Intake Agent<br/>extraction + danger-sign checklist]
+    SUP -->|need guidelines| RET[Retrieval<br/>vector search]
     SUP -->|assessment done| OUT[Output<br/>triage card]
+    SUP -->|question asked| ENDQ([END: wait for reply])
 
-    INT -.->|returns to hub| SUP
-    RET -.->|returns to hub| SUP
-    TRI -.->|returns to hub| SUP
+    INT -.-> SUP
+    RET ==>|parallel| JUD[Relevance judge<br/>LLM-as-judge]
+    RET ==>|parallel| TRI[Triage Agent<br/>reasoning + safety floor]
+    JUD -.-> SUP
+    TRI -.-> SUP
     OUT --> ENDN([END])
 
     style SUP fill:#c0392b,color:#fff
     style INT fill:#e67e22,color:#fff
     style RET fill:#2980b9,color:#fff
+    style JUD fill:#2980b9,color:#fff
     style TRI fill:#27ae60,color:#fff
     style OUT fill:#8e44ad,color:#fff
 ```
 
-**Human-in-the-loop:** `interrupt_before=["intake"]` pauses the graph before each interview turn, so the UI can surface the question and wait for the caregiver's reply — a real multi-turn conversation, not a one-shot prompt.
+**Self-correction loops**
+- **Retrieval:** the relevance judge and the triage agent run **in
+  parallel**. If the judge rejects the guidelines, the supervisor discards
+  that triage result and retrieves again with reformulated queries (at most
+  3 attempts). It stops early when a retry finds no new chunk.
+- **Low confidence:** if triage confidence is below 0.75, the supervisor
+  sends the case back to intake. Intake asks triage's follow-up questions,
+  then retrieval and triage re-run (at most 3 cycles).
 
-**Stateful persistence:** a checkpointer keyed by `thread_id` restores exact graph state between turns, so a session resumes from where it left off. `MemorySaver` in dev; swap to `SqliteSaver`/`PostgresSaver` for production with no other code changes.
+**Safety layer** (`safety.py`, deterministic)
+- Intake must ask every applicable danger-sign checklist group before it can
+  finish: IMNCI general danger signs; breathing (breath count, chest
+  indrawing, stridor); dehydration; stiff neck; adult danger signs.
+- The final level is max(LLM level, rule floor). Danger signs force
+  **Emergency**; fast breathing for age or some dehydration force at least
+  **Urgent**. The rules never downgrade.
 
----
-
-## Example session
-
-> *Illustrative run showing the multi-turn flow; the triage logic is grounded in IMNCI guidance retrieved via RAG.*
-
-```
-👤 User:      My 3-year-old has had a cough for 4 days and seems to be
-              breathing fast.
-
-🤖 Intake:    How many breaths per minute is the child taking, and for how
-              long has the fast breathing been going on?
-
-👤 User:      About 50 per minute, started 2 days ago.
-
-🤖 Intake:    Any fever, and is the child still drinking and feeding normally?
-
-👤 User:      Mild fever since yesterday. Still drinking but eating less.
-
-🤖 Intake:    Is there any chest indrawing, bluish lips, or unusual drowsiness?
-
-👤 User:      No blue lips or drowsiness, but the chest does seem to pull in.
-
-🔍 Retrieval: [searching clinical guidelines: "fast breathing + chest
-              indrawing, age 3" → IMNCI pneumonia criteria]
-
-🧠 Triage:    Reasoning over symptoms + retrieved guidance…
-
-┌─────────────────────────────────────────────────────────────┐
-│  TRIAGE RESULT                                    ⚠  URGENT   │
-├─────────────────────────────────────────────────────────────┤
-│  Suspected: Pneumonia (fast breathing + chest indrawing)      │
-│  Level:     URGENT — seek same-day medical care               │
-│  Basis:     Respiratory rate ≥40/min with lower chest         │
-│             indrawing in a child aged 1–5 (IMNCI)             │
-│  Advise:    Do not wait; visit a clinic or health worker      │
-│             today. Watch for blue lips or drowsiness →        │
-│             emergency referral.                               │
-└─────────────────────────────────────────────────────────────┘
-```
+**State:** a LangGraph checkpointer keyed by `thread_id`. Postgres
+(`CHECKPOINT_DB_URL`) in production, so sessions survive restarts; in-memory
+otherwise. The browser keeps the session id (`gr.BrowserState`).
 
 ---
 
-## Engineering highlights
+## Example session (real output)
 
-- **Human-in-the-loop:** `interrupt_before=["intake"]` pauses the graph before each interview turn so the UI can surface the question and wait for the caregiver's reply — a real conversational loop, not a one-shot prompt.
-- **Stateful persistence:** a LangGraph checkpointer keyed by `thread_id` restores exact graph state between turns/HTTP requests, so multi-turn sessions resume seamlessly. (`MemorySaver` in dev; swap to `SqliteSaver`/`PostgresSaver` for production with zero other changes.)
-- **Type-safe shared state:** Pydantic models (`Symptom`, `VitalSigns`, `PatientSummary`, `SuspectedCondition`, `TriageResult`) are the single source of truth; LLMs emit them directly via `.with_structured_output()`, so malformed fields are caught at the boundary.
-- **RAG grounding:** clinical guidelines are ingested, embedded, and retrieved via a vector-search tool, so triage decisions cite source guidance rather than relying on the model's parametric memory.
-- **Tested:** a pytest suite covers state, the graph wiring, individual agents, and the RAG layer.
+From the final evaluation run (`triage-agent/eval/results/suite31_final.json`,
+case A). The caregiver's replies come from the eval's **simulated caregiver**,
+which answers from a hidden case description. System time per turn:
+10.9 s, 7.6 s, 20.9 s.
+
+```
+👤 My 3 year old has had a cough for 4 days and seems to be breathing fast.
+
+🤖 I need to check for danger signs. Is the child able to drink or breastfeed? Does the
+   child vomit everything? Has the child had any fits (convulsions) in this illness? Is
+   the child unusually sleepy or hard to wake?
+
+👤 He is still drinking and is not vomiting everything. He has not had any convulsions,
+   and he is alert.
+
+🤖 Please count the child's breaths for one full minute while the child is calm: how many
+   breaths? Does the lower chest pull in when the child breathes in? Is there a harsh
+   noise when the child breathes in while calm?
+
+👤 I counted 50 breaths in one minute, and his lower chest does pull in when he breathes
+   in. There is no harsh noise when he breathes.
+
+TRIAGE LEVEL: 🔴 EMERGENCY — Refer to hospital IMMEDIATELY.
+SUSPECTED CONDITIONS:  Severe Pneumonia (95%) · Very Severe Disease (80%)
+RECOMMENDED ACTIONS:   1. Give first dose of an appropriate antibiotic per IMNCI protocol
+                       2. Refer URGENTLY to the nearest hospital immediately
+                       3. Keep the child warm and ensure the airway is clear during transport
+                       4. Do not delay referral
+BASED ON:              FAST BREATHING THRESHOLDS · ASSESS AND CLASSIFY COUGH OR DIFFICULT
+                       BREATHING · CHEST INDRAWING DEFINITION
+Assessment confidence: High (95%)
+```
+
+The original code classified this same case **Standard**: it never asked
+about chest indrawing.
+
+---
+
+## Evaluation
+
+`triage-agent/eval/` has 31 **self-written** vignettes whose expected levels
+are derived from the guideline text in this repo. It's a regression and
+safety suite, **not a clinical benchmark** (see `triage-agent/eval/README.md`).
+Headline numbers, before the hardening work and after it (full history in
+[`PHASES.md`](PHASES.md)):
+
+| 31 cases, Gemini (`gemini-3.1-pro-preview` triage, `gemini-3.8-flash` other agents) | Before (Phase 1 code) | Final |
+|---|---|---|
+| Under-triage (the safety metric) | 10/31 | **0/31** |
+| Accuracy (exact level) | 18/31 | **29/31** |
+| Latency per triage, median / p95 (all turns, simulated caregiver excluded) | 63.65 s / 81.79 s | **39.92 s / 49.08 s** |
+
+The default Claude configuration has not been evaluated.
 
 ---
 
 ## Repo structure
 
 ```
-agents/      supervisor (router) · intake · retrieval · triage
-rag/         embeddings · ingest · store        (vector store + RAG)
-tools/       vector_search
-prompts/     per-agent prompt templates
-state.py     Pydantic data models + LangGraph TypedDict state + enums
-graph.py     StateGraph wiring, interrupts, checkpointing, run_turn()
-output.py    triage-card formatting
-app.py       Gradio frontend
-tests/       test_state · test_graph · test_agents · test_rag
+triage-agent/
+  agents/        supervisor · intake · retrieval (+ relevance judge) · triage · adk_retrieval (optional)
+  safety.py      danger-sign checklist, red flags, rule-based triage floor
+  graph.py       StateGraph wiring, parallel fan-out, run_turn()
+  checkpointing.py  PostgresSaver / in-memory, state-type allowlist
+  tracing.py     per-turn traces with per-agent spans → POST /api/v1/traces
+  pricing.py     model prices (unknown price → unknown cost, never $0)
+  llm.py         providers: anthropic (default), openai(-compatible), groq, together, ollama, vertexai
+  rag/           embeddings · ingest · Chroma store
+  prompts/       per-agent prompts
+  app.py         Gradio UI
+  eval/          cases.json (31), run_eval.py, compare.py, profile.py, results/
+  deploy/        deploy_cloud_run.sh, CLOUD_RUN.md
+  Dockerfile
+  tests/         pytest suite
+PHASES.md        per-phase changes and measurements
+RESUME_FACTS.md  verified facts only
 ```
 
 ## Run
 
 ```bash
-pip install -r requirements.txt
-# set your LLM API key in the environment
-python app.py        # launches the Gradio interface
-pytest               # run the test suite
+cd triage-agent
+pip install -r requirements-dev.txt
+python -m rag.ingest --sample          # build the sample knowledge base
+python app.py                          # Gradio UI on :7860
+pytest                                 # test suite
 ```
+
+Configuration (environment):
+- `LLM_PROVIDER` plus that provider's key; `MODEL_NAME` / `FAST_MODEL_NAME` optional
+- `CHECKPOINT_DB_URL` (Postgres) and `BROWSER_STATE_SECRET` for persistent sessions
+- `TRACE_API_URL` and `TRACE_API_KEY` for tracing
+- `TEST_POSTGRES_URL` enables the Postgres tests
+
+To run on Gemini through Google's OpenAI-compatible endpoint (how the eval was run):
+```bash
+export LLM_PROVIDER=openai OPENAI_API_KEY=<gemini key> \
+  OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/ \
+  MODEL_NAME=gemini-3.1-pro-preview FAST_MODEL_NAME=gemini-3.8-flash
+```
+
+Container and Cloud Run (Gemini via Vertex AI): see
+[`triage-agent/deploy/CLOUD_RUN.md`](triage-agent/deploy/CLOUD_RUN.md).
 
 ## Tech
 
-LangGraph · LangChain · Pydantic · a vector store for RAG · Gradio · pytest.
+LangGraph · LangChain · Pydantic · ChromaDB + sentence-transformers
+(all-MiniLM-L6-v2) · Gradio 5 · PostgreSQL (langgraph-checkpoint-postgres) ·
+Gemini (OpenAI-compatible endpoint / Vertex AI) · Docker / Cloud Run ·
+optional Google ADK · pytest.

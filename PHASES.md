@@ -442,3 +442,59 @@ by real LLM calls here; it is covered by its tests. Between 5b and final the
 latency-relevant code is identical apart from 5c, and the median moved
 36.95 s → 39.92 s. About 3 s of run-to-run variation is the noise floor
 for these comparisons.
+
+---
+
+## Phase 7 (optional): ADK ReAct retrieval agent (commit `b0dbc9e`)
+
+**Changed:** `agents/adk_retrieval.py`, enabled with `RETRIEVAL_BACKEND=adk`.
+- A Google ADK (`google-adk==2.0.0`) `LlmAgent` with one tool,
+  `search_guidelines(query)`. It searches, reads the results, refines and
+  searches again (at most 4 searches), then returns the ids of the chunks
+  relevant for classifying the case.
+- It plugs into the existing retrieval node, so the rest of the graph
+  (parallel judge and triage, supervisor, safety floor) is identical for
+  both backends.
+- **Model adapter.** ADK's built-in Gemini client uses the native API
+  (`x-goog-api-key`), which rejected the Bearer key used here (HTTP 401).
+  ADK's LiteLLM route pins `openai==2.24.0` and `pydantic==2.12.5`, which
+  conflict with `langchain-openai` (`openai>=2.45`) and Gradio 5.50.0
+  (`pydantic<=2.12.3`). So `OpenAICompatLlm` implements ADK's `BaseLlm`
+  over the openai SDK and the Gemini OpenAI-compatible endpoint.
+  - It round-trips **Gemini 3 thought signatures**: without them the second
+    tool-use turn failed with HTTP 400 ("Function call is missing a
+    thought_signature").
+  - It fires LangChain callbacks, so the eval and tracing record its calls.
+- **Dependencies:** `requirements-adk.txt` installs into a separate venv.
+  ADK 2.0.0 needs `google-genai<2` and `opentelemetry<=1.41.1`, so
+  ChromaDB's OTLP exporter has to be pinned to 1.41.1 there too.
+- Tests: `tests/test_adk_retrieval.py` has 4 offline adapter tests
+  (messages, tool calls, thought-signature round trip, tool schema, id
+  parsing). They pass in the ADK venv and skip without `google-adk`.
+
+**Eval** (31 cases, same settings; ADK venv, `RETRIEVAL_BACKEND=adk`)
+compared with the final default backend:
+
+| Metric | Default LangGraph retrieval (`suite31_final`) | ADK ReAct retrieval (`suite31_adk`) |
+|---|---|---|
+| Accuracy | 29/31 | 28/31 |
+| **Under-triage** | **0/31** | **0/31** |
+| Over-triage | 2/31 (F, X) | 3/31 (F, W, X) |
+| Latency median / p95 | **39.92 / 49.08 s** | 53.24 / 70.31 s |
+| Completing turn median / p95 | **22.77 / 38.29 s** | 37.02 / 58.05 s |
+| Retrieval node, median | 0.06 s (attempt 1 uses the extraction's queries; no LLM call) | 13.51 s (145 agent model calls over 33 retrieval runs) |
+| Tokens per triage, median | **11,189** | 20,003 |
+| LLM calls per triage, median | **5** | 9 |
+| Guideline sections handed to triage, median | 5 | 2 |
+| Priced cost per triage, median (triage model only) | $0.0135–$0.0219 | $0.0126–$0.0213 |
+| LLM errors | 0 | 0 |
+
+**Verdict:** on this suite the ADK agent did not improve accuracy (one case
+lower; W is a hypertension case that has flipped across runs before) and
+under-triage stayed at 0/31. It added 13.3 s to the median latency and 79%
+more tokens. **The default LangGraph retrieval stays the default; ADK is an
+optional backend.** The triage model's priced cost was slightly lower with
+ADK, because it gets fewer chunks (2 vs 5), but the extra flash-model calls
+are unpriced, so the total cost comparison is unknown. The knowledge base
+has only 8 chunks, which leaves a search-and-refine agent little to find. A
+real guideline corpus might change the trade-off; that is untested.
