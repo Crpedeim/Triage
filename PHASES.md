@@ -728,3 +728,34 @@ median.
 
 Tests: 261 passed, 4 skipped, 1 failed (the tracing test that also fails on
 untouched `main` on this machine).
+
+## R2 Phase 3: Postgres persistence (IN PROGRESS, not finished)
+
+Done and measured:
+- Neon Postgres (PostgreSQL 18.7, AWS us-east-1), **direct** (non-pooled)
+  connection string with `sslmode=require`, stored in Secret Manager as
+  `triage-checkpoint-db-url`. `PostgresSaver.setup()` created
+  `checkpoints`, `checkpoint_blobs`, `checkpoint_writes` and
+  `checkpoint_migrations` (11.22 s from a laptop with a 235–300 ms round trip).
+- `triage-browser-state-secret`: 64 hex characters (version 1 had a stray
+  CR from Windows openssl and is disabled). Both secrets are wired into the
+  private `triage-ai-bench` Cloud Run service.
+- LangGraph warning: every `state.py` model and enum is already on the
+  serializer allowlist. A checkpoint round trip on Neon logged 0
+  "Deserializing unregistered type" warnings; LangGraph's default
+  serializer logged 2 for the same state. The warning seen earlier came from
+  the quick-deploy image. New test: every state class must be on the
+  allowlist. `tests/test_postgres_checkpoint.py` against Neon: 5 passed.
+- **Scale to zero, verified:** 2-turn chat on `triage-ai-bench-00007`;
+  instance count reached 0 at 08:45:41 UTC (about 15 min after the last
+  request). The first request afterwards took 45.75 s (new instance
+  `6a86e56d`, AUTOSCALING, probe ok 44.71 s). The page restored all 4
+  messages from Neon, and the next answer completed the triage: EMERGENCY,
+  citing WHO IMCI handbook 7.2.
+
+NOT finished:
+- **2 instances:** revision `00008` ran with min=max=2 and no session
+  affinity. Through `gcloud run services proxy`, every turn after the first
+  went to one instance (`c20a056a`), so cross-instance reads were NOT shown.
+  The third turn did not finish within 126 s; cause NOT investigated. The
+  service was set back to min 0 / max 1.

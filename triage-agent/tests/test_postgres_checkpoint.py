@@ -92,3 +92,25 @@ def test_serializer_round_trips_state_types_without_unregistered_warning(caplog)
         back = serde.loads_typed(serde.dumps_typed(obj))
     assert back == obj
     assert not [r for r in caplog.records if "unregistered" in r.getMessage().lower()]
+
+
+def test_every_state_model_and_enum_is_on_the_serializer_allowlist():
+    """
+    A Pydantic model or Enum added to state.py but not to checkpointing.STATE_TYPES
+    would bring back LangGraph's "Deserializing unregistered type ... will be
+    blocked in a future version" warning, and after an upgrade saved sessions
+    would stop loading. (R2 Phase 3: the default serializer logs it twice for a
+    state holding a TriageResult; the allowlisted one logs it 0 times.)
+    """
+    import inspect
+    from enum import Enum
+
+    from pydantic import BaseModel
+
+    import state
+    from checkpointing import STATE_TYPES
+
+    defined = {name for name, obj in vars(state).items()
+               if inspect.isclass(obj) and obj.__module__ == "state"
+               and (issubclass(obj, BaseModel) or issubclass(obj, Enum))}
+    assert defined - {name for _, name in STATE_TYPES} == set()
