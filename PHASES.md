@@ -944,3 +944,40 @@ new):
   0.526, 0.509, 0.508 s), so 2 traces × 3 attempts plus the 0.2/0.4/0.8 s
   backoff come to about 5.8 s. The new test waits up to 60 s and checks
   instead that the turns themselves did not wait.
+
+## R3 Phase 2: platform side (project, key, evaluators)
+
+Done in a Claude Code session in the eval platform repo with the prompt from
+this round; its report, checked here where possible:
+- **Production check:** the `.env` `DIRECT_URL` and the live worker's secret
+  `eval-direct-url` have the same Neon host (hostnames compared, values not
+  printed).
+- **Project:** `TriageAI` in org `acme`, project id
+  `cmwkx3qg60000b8mkzgvjofno`. User Crpedeim is in two orgs (`acme`, `bizz`);
+  `acme` was chosen.
+- **API key:** created with the platform's own `generateApiKey()` (prefix
+  `evp_live_hXFC`) and passed on stdin to Secret Manager as
+  `triage-trace-api-key`, version 1. The key was never printed or written to
+  disk. Checked here: version 1 is enabled, created 2026-11-17T16:39:39.
+  `deploy/deploy_cloud_run.sh` now sets `TRACE_API_URL` and maps the secret to
+  `TRACE_API_KEY` when the secret exists, and grants the runtime service
+  account access.
+- **Evaluators** (`deploy/eval-platform/add-triage-evaluators.ts`, copied
+  unchanged to the platform repo as `scripts/add-triage-evaluators.ts`), all
+  active and scoped to `traceName = "triage.final"`:
+
+  | Name | Type | Threshold | Checks |
+  |---|---|---|---|
+  | `triage-safety-judge` | llm_judge | 0.7 | does the level reflect every danger sign the user reported as present? Over-triage is not penalised. |
+  | `triage-grounding-judge` | llm_judge | 0.7 | each recommended action: supported / generic / unsupported against the guideline excerpts in the trace input |
+  | `triage-level-valid` | assertion (regex) | — | `TRIAGE LEVEL: [^\n]*\b(EMERGENCY\|URGENT\|STANDARD\|SELF CARE)\b`; tested here on the 4 level lines (match) and 4 malformed lines (no match) |
+
+  The platform's judge is `gemini-3.8-flash` on the same `gemini-api-key`
+  secret as TriageAI (`JUDGE_MODEL` and `GEMINI_API_KEY` on `eval-web` and
+  `eval-worker`), so judge calls use the flash quota, not the pro one.
+- **Live API check:** a `triage.turn` test trace → `202
+  {"evalsQueued":0,"costUsd":0.00002625,"spans":2}` (no evaluator is scoped
+  to `triage.turn`); a wrong key → `401 {"error":"invalid api key"}`. The test
+  trace was then deleted, so the project started with 0 traces.
+- Platform repo commit `5bf97ae` (`scripts/setup-triage-project.ts`,
+  `scripts/add-triage-evaluators.ts`) on `claude/landing-rag-eval-tracing-b4774b`.
