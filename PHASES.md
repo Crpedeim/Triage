@@ -59,3 +59,68 @@ Notes:
 - An earlier run of the same 6 cases (2026-11-16, recorded in
   `RESUME_FACTS.md`) gave the same 4/6 and the same two under-triaged cases,
   with median latency 66.33 s.
+
+---
+
+## Phase 1: fix what's broken (commit `11aa2e1`)
+
+**Changed:**
+1. **`run_turn()` / multi-turn flow** (`graph.py`, `agents/supervisor.py`,
+   `agents/intake.py`, `state.py`). Removed `interrupt_before=["intake"]`.
+   Each user message is now one graph run on the thread's checkpointed state.
+   When intake asks a question it sets `awaiting_user=True` and the
+   supervisor routes to END. The next message merges into the saved state and
+   starts a new run. No resume step, and no LLM call is ever re-executed.
+2. **Feedback loop** (`agents/supervisor.py`, `agents/intake.py`). On a
+   low-confidence loop-back the supervisor clears the stale `triage_result`
+   and retrieval output, so after the follow-up questions retrieval → triage
+   re-run. `route_next` was reordered and the unreachable "case 6" removed.
+   Intake now asks queued follow-up questions before it may complete.
+3. **Intake JSON leak** (`prompts/intake_prompt.py`, `agents/intake.py`). The
+   question call has its own `QUESTION_SYSTEM` prompt instead of reusing
+   `EXTRACTION_SYSTEM`. `clean_question()` replaces JSON or code output with
+   a plain fallback question.
+4. **Gradio** pinned to `5.50.0` (all direct dependencies pinned to the tested
+   versions). `app.py` moved to the `messages` history format and dropped the
+   removed `bubble_full_width` argument.
+
+**Tests:** 161 passed, 1 skipped (was 151 passed, 1 skipped). 10 new tests in
+`tests/test_multiturn.py` run the REAL compiled graph and checkpointer with
+a scripted stub LLM:
+- a 3-turn `run_turn()` conversation (intake runs every turn; turn 3 completes)
+- thread isolation
+- the low-confidence loop re-running triage, and terminating at max cycles
+- supervisor reset semantics, and routing to END while awaiting the user
+- the question prompt not being the extraction prompt
+- JSON never being shown, and normal questions being kept
+- follow-ups asked before completion
+
+Against the original code the regression tests fail: the 3-turn test, both
+loop tests, the supervisor reset test and the prompt tests (run by stashing
+the fixes).
+
+**Eval:** `python -m eval.run_eval --label phase1_fixes --driver run_turn --concurrency 1`
+(production `run_turn()` path; Phase 0 had to use the manual driver).
+
+| Metric | Phase 0 | Phase 1 |
+|---|---|---|
+| Driven through `run_turn()` | not possible (0 LLM calls over 3 turns) | **yes, 6/6 reached `done`** |
+| Accuracy | 4/6 | 4/6 |
+| Under-triage | 2/6 (A, B) | 2/6 (A, B) |
+| Over-triage | 0/6 | 0/6 |
+| Latency median / p95 | 75.81 s / 153.37 s | **66.07 s / 87.59 s** |
+| Tokens per triage, median | 12,875.5 | 11,433.5 |
+| LLM calls per triage, median | 9 | 8 |
+| Priced cost per triage, median (triage model only) | $0.0139–$0.0237 | $0.0137–$0.0225 |
+| JSON shown to the user (intake turns containing `{` or a code fence) | 0 in this run (1 in the earlier run, case E) | 0 |
+| Confidence | 1.0 in 6/6 | 1.0 in 6/6 |
+
+Accuracy was not expected to change: Phase 1 fixes plumbing, not clinical
+logic. The latency difference is within the run-to-run variance seen so far
+(the Phase 0 p95 is one 71.9 s API call), so I don't claim a latency
+improvement from Phase 1.
+
+**UI check:** `app.py` on Gradio 5.50.0, driven with `gradio_client` through
+its `/on_send` endpoint with real Gemini calls (4-year-old, mild cough).
+Turn 1 returned an intake question in 13.3 s. Turn 2 returned the
+completion message and a SELF CARE card in 105.5 s.
