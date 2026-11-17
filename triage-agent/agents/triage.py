@@ -92,9 +92,11 @@ def triage_agent(state: TriageState) -> dict:
             HumanMessage(content=user_prompt),
         ])
     except Exception as e:
-        # Structured output failed — return a low-confidence result
-        # that will trigger the feedback loop
-        return _error_result(f"Triage reasoning failed: {str(e)[:100]}")
+        # The LLM call failed (API error, quota, invalid structured output).
+        # Fail SAFE: at least URGENT, and the deterministic danger-sign floor
+        # still applies (R2 Phase 2: a quota outage turned emergencies into
+        # STANDARD cards before this).
+        return _error_result(f"Triage reasoning failed: {str(e)[:100]}", summary)
 
     # ─── Post-processing: Red Flag Override (SAFETY GUARDRAIL) ───────────
     # If danger signs are present, escalate regardless of LLM output.
@@ -225,26 +227,38 @@ def _extract_follow_up_questions(
     return questions[:3]  # Return at most 3 follow-up questions
 
 
-def _error_result(reason: str) -> dict:
+def _error_result(reason: str, summary: PatientSummary | None = None) -> dict:
     """
-    Return a low-confidence triage result when the agent fails.
-    Forces the feedback loop to get more information.
+    Result when the automated assessment could not be completed.
+
+    Fails SAFE: the level is at least URGENT (a patient who could not be
+    assessed is sent to a health facility today, never told it is routine),
+    and when a summary exists the deterministic danger-sign floor is applied,
+    so danger signs still give EMERGENCY. Low confidence keeps the feedback
+    loop (a retry) available.
     """
+    result = TriageResult(
+        triage_level=TriageLevel.URGENT,
+        suspected_conditions=[
+            SuspectedCondition(
+                name="Unable to classify (automated assessment failed)",
+                confidence=0.1,
+                supporting_symptoms=[],
+                ruling_out=[],
+            )
+        ],
+        recommended_actions=[
+            "Automated assessment could not be completed: refer to a health facility TODAY "
+            "for clinical assessment.",
+            "Collect more patient information",
+        ],
+        reasoning=f"Triage assessment could not be completed: {reason}",
+        guidelines_cited=[],
+    )
+    if summary is not None:
+        result = _apply_red_flag_override(result, summary)
     return {
-        "triage_result": TriageResult(
-            triage_level=TriageLevel.STANDARD,
-            suspected_conditions=[
-                SuspectedCondition(
-                    name="Unable to classify",
-                    confidence=0.1,
-                    supporting_symptoms=[],
-                    ruling_out=[],
-                )
-            ],
-            recommended_actions=["Collect more patient information", "Refer to health center"],
-            reasoning=f"Triage assessment could not be completed: {reason}",
-            guidelines_cited=[],
-        ),
+        "triage_result": result,
         "triage_confidence": 0.1,
         "follow_up_questions": ["Please describe the patient's main symptoms in detail."],
     }

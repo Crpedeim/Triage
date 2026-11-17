@@ -609,6 +609,39 @@ class TestTriageAgent:
         assert result["triage_confidence"] < CONFIDENCE_THRESHOLD
 
     @patch("agents.triage.get_llm")
+    def test_llm_failure_fails_safe_with_danger_signs(self, mock_get_llm):
+        """
+        R2 Phase 2: a Gemini quota error (HTTP 429) made the triage call fail and
+        the old error result said STANDARD, even with chest indrawing. A failed
+        assessment must keep the deterministic floor: chest indrawing -> EMERGENCY.
+        """
+        from agents.triage import triage_agent
+
+        mock_structured = MagicMock()
+        mock_structured.invoke.side_effect = Exception("Error code: 429 RESOURCE_EXHAUSTED")
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_get_llm.return_value = mock_llm
+
+        result = triage_agent(self._make_state_with_guidelines(make_pneumonia_summary()))
+        assert result["triage_result"].triage_level == TriageLevel.EMERGENCY
+
+    @patch("agents.triage.get_llm")
+    def test_llm_failure_never_returns_routine_level(self, mock_get_llm):
+        """With no danger signs, a failed assessment is still at least URGENT, never STANDARD/self-care."""
+        from agents.triage import triage_agent
+
+        mock_structured = MagicMock()
+        mock_structured.invoke.side_effect = Exception("API error")
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_get_llm.return_value = mock_llm
+
+        result = triage_agent(self._make_state_with_guidelines(make_mild_cough_summary()))
+        assert result["triage_result"].triage_level == TriageLevel.URGENT
+        assert "could not be completed" in result["triage_result"].recommended_actions[0]
+
+    @patch("agents.triage.get_llm")
     def test_no_summary_returns_error(self, mock_get_llm):
         """No patient summary → error result, not exception."""
         from agents.triage import triage_agent

@@ -666,3 +666,65 @@ clean-up; manifest integrity). Suite on this machine (Python 3.14.0, Windows):
 252 passed, 4 skipped, 1 failed. The failure,
 `test_tracing.py::test_platform_down_never_breaks_or_blocks_triage`, also
 fails on untouched `main` (`e6230ed`) on this machine.
+
+## R2 Phase 2: re-evaluation on the WHO knowledge base
+
+Same settings as every 31-case run above: Gemini through the OpenAI-compatible
+endpoint, `gemini-3.1-pro-preview` (triage) and `gemini-3.8-flash` (fast
+model and simulated caregiver), temperature 0, `--driver run_turn
+--concurrency 4`, the 31 cases in `eval/cases.json`. Knowledge base: the
+874-chunk store built by `rag/build_kb.py` (R2 Phase 1). Run on this laptop.
+
+### Two runs that do not measure the knowledge base (kept as evidence)
+| Run | What happened | Effect |
+|---|---|---|
+| `r2_suite31_whokb_quota429` | 45 calls failed with HTTP 429 "Quota exceeded … generate_requests_per_model_per_day, limit: 250, model: gemini-3.1-pro" (the key is on Tier 1; earlier runs that day had used the quota). All 45 were triage calls, in 12 cases, starting at case 20 of 31. | 23/31, **5 under-triage**. All 5 were cases whose triage call failed; the 19 cases with no error were 19/19 correct |
+| `r2_suite31_whokb_connerr` | 29 calls failed with "Connection error." from this machine (27 intake, 1 triage, 1 relevance check) | 11 cases ended with no result (counted as under-triage); the 20 that completed were 20/20 correct |
+
+### Safety bug found and fixed (the under-triage in the quota run)
+When the triage LLM call raised, `agents/triage.py::_error_result` returned
+**STANDARD** without applying the deterministic danger-sign floor. With
+the quota exhausted, adult chest pain (Y), stroke signs (Z), fast breathing
+with chest indrawing (AB), infant severe dehydration (AC) and fever with fast
+breathing (AD) all became STANDARD cards. Fix: a failed assessment returns
+at least **URGENT** ("Automated assessment could not be completed: refer to
+a health facility TODAY") and the same `safety.triage_floor` is applied, so
+danger signs give **EMERGENCY**. Two new tests: a failure with chest indrawing
+gives EMERGENCY; a failure with no danger signs gives URGENT, never STANDARD.
+
+Not fixed, noted: when the **intake** call fails, the conversation produces no
+triage card (the connection-error run). The user gets no card rather than a
+wrong one.
+
+### Result: clean run `r2_suite31_whokb` (0 LLM errors)
+| Metric | Previous final (`suite31_final`, 8 curated chunks) | **WHO knowledge base (`r2_suite31_whokb`, 874 chunks)** |
+|---|---|---|
+| Accuracy | 29/31 | **30/31** |
+| **Under-triage** | **0/31** | **0/31** |
+| Over-triage | 2/31 (F, X) | 1/31 (X: grade-3 hypertension, no symptoms → urgent) |
+| No result / LLM errors | 0 / 0 | 0 / 0 |
+| Latency per triage, median / p95 | 39.92 / 49.08 s | 43.74 / 71.24 s |
+| Completing turn, median / p95 | 22.77 / 38.29 s | 24.40 / 60.74 s |
+| Tokens per triage, median (p95) | 11,189 (13,729) | 12,262 (20,529) |
+| LLM calls per triage, median | 5 | 5 |
+| Priced cost per triage, median (triage model only) | $0.0135–$0.0219 | $0.0149–$0.0240 |
+| Total cost per triage | NOT MEASURED (flash unpriced) | NOT MEASURED (flash unpriced) |
+| Suite wall time | 400.37 s | 453.31 s |
+
+Confusion: emergency 15/15, urgent 5/5, self_care 7/7, standard 3/4 (one called urgent).
+
+**Why p95 latency rose.** The three slowest cases are adult emergencies:
+V hypertensive crisis 92.7 s (was 41.5 s), Z stroke 71.2 s (was 49.1 s) and
+Y chest pain 70.3 s (was 46.7 s). Each made 10 LLM calls (was 6–7): the
+relevance judge rejected the retrieved WHO PEN chunks twice, so retrieval →
+judge → speculative triage ran 3 times. WHO PEN 2020 has no section on acute
+chest pain, stroke or hypertensive crisis. The old curated hypertension
+excerpt had a "Hypertensive Crisis (Emergency)" paragraph, which is not in the
+PEN 2020 text, and that excerpt is no longer in the knowledge base. All three
+were still classified EMERGENCY (red-flag rules). Per-call latency changed
+little: pro median 11.32 → 12.44 s, flash 7.59 → 8.11 s. One run per
+configuration; earlier runs showed about 3 s of run-to-run variation in the
+median.
+
+Tests: 261 passed, 4 skipped, 1 failed (the tracing test that also fails on
+untouched `main` on this machine).
