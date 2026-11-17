@@ -981,3 +981,158 @@ this round; its report, checked here where possible:
   trace was then deleted, so the project started with 0 traces.
 - Platform repo commit `5bf97ae` (`scripts/setup-triage-project.ts`,
   `scripts/add-triage-evaluators.ts`) on `claude/landing-rag-eval-tracing-b4774b`.
+
+## R3 Phase 3: the evaluation through the live platform
+
+**How it ran.**
+- **Suite:** the 31-case suite ran from code (`python -m eval.run_eval --label
+  r3_suite31_traced --concurrency 4`), not through the public URL. Same
+  models and WHO knowledge base (874 chunks) as Round 2. Tracing pointed at
+  the live platform, with the key read from Secret Manager into an
+  environment variable only.
+- **Reading results:** with the user's OK, the platform's results were read
+  from its database in a `READ ONLY` transaction, for the TriageAI project
+  only (`eval/platform_report.py`).
+- **Result files:** `eval/results/r3_suite31_traced.json` (suite),
+  `r3_platform_suite31.json` and `r3_platform_live.json` (platform side),
+  `r3_live_cloudrun.json` (live cases).
+
+**Gemini quota check (before the run).**
+- Cloud Monitoring reports the API's request counts per method, not per
+  model. So the per-model daily use could not be read: 1,533
+  `GenerateContent` requests across all models had been made since the reset
+  at midnight Pacific (08:00 UTC).
+- Counted from today's result files after the reset: 62 `gemini-3.1-pro`
+  calls (25 + 37). The Cloud Run checks after them were not counted per
+  model.
+- A single pro call then succeeded (4.09 s), so the limit was not reached.
+  The previous full run had taken 37 pro calls, so the run was not split.
+- This run made **40** pro calls, with no 429 or other LLM error.
+
+**Suite result (system side).** 30/31 correct, **under-triage 0/31**,
+over-triage 1/31 (X, grade-3 hypertension without symptoms → urgent).
+
+| Metric | Value |
+|---|---|
+| Latency per triage, median / p95 | 45.99 s / 89.58 s |
+| Completing turn, median / p95 | 25.17 s / 63.34 s |
+| Tokens per triage, median (p95) | 12,442 (23,060) |
+| LLM calls per triage, median | 5 |
+| Suite wall time | 527.06 s |
+
+S took 184.64 s and 23 LLM calls.
+
+**Traces sent vs received.**
+- Client: 95 submitted, **95 sent (202)**, 0 failed, 0 dropped, 0 retries.
+- Platform: **95 traces** for this eval label (31 `triage.final`, 64
+  `triage.turn`) and 765 spans.
+- The 95 trace ids in the 202 bodies and the 95 stored ids are the same set,
+  and every case has its `triage.final` trace.
+
+**Per-agent latency, from the spans the platform stored (ms):**
+
+| Span | n | Median | p95 |
+|---|---|---|---|
+| turn `triage.turn` | 64 | 10,451.5 | 17,705 |
+| turn `triage.final` | 31 | 25,167 | 63,341 |
+| agent `intake` | 97 | 10,649 | 15,716 |
+| agent `triage` | 40 | 11,969 | 17,437 |
+| agent `relevance_judge` | 40 | 4,986 | 7,009 |
+| agent `retrieval` | 40 | 38 | 9,395 |
+| router `supervisor` | 232 | 0 | 0 (max 1) |
+| llm intake / `gemini-3.8-flash` | 103 | 10,525 | 15,363 |
+| llm triage / `gemini-3.1-pro-preview` | 40 | 11,965.5 | 17,433 |
+| llm relevance_judge / `gemini-3.8-flash` | 40 | 4,983.5 | 7,008 |
+| llm retrieval (query rewrite) / `gemini-3.8-flash` | 7 | 9,145 | 11,471 |
+
+Retrieval is 38 ms without an LLM call; the 7 rewrites after a judge
+rejection make up its p95. There were 40 triage runs for 31 cases (9 extra
+runs, from the retrieval and low-confidence loops).
+
+**TOTAL COST PER TRIAGE** (before: NOT MEASURED, because `gemini-3.8-flash`
+had no price). The platform computed it from each LLM span's model and
+tokens; this is `Trace.costUsd` summed over all turns of a conversation:
+
+| | Median | p95 | Min | Max | Total (31) |
+|---|---|---|---|---|---|
+| **Per triage, all models** | **$0.042758** | $0.100079 | $0.033199 | $0.150813 | $1.569942 |
+| `gemini-3.1-pro-preview` part | $0.023510 | $0.072538 | $0.017914 | $0.075074 | $0.953964 |
+| `gemini-3.8-flash` part | $0.017507 | $0.025005 | $0.012388 | $0.078274 | $0.615970 |
+| Platform judges per triage (separate) | $0.010870 | $0.023380 | $0.007500 | $0.031819 | $0.389931 |
+
+The pro part's median ($0.023510) is the same as the suite's own "high"
+estimate (reasoning billed as output), $0.02351.
+
+**Judges** (all 93 runs finished, 0 failed):
+
+| Evaluator | Passed | Score median (min) | Judge latency median / p95 |
+|---|---|---|---|
+| `triage-safety-judge` | **31/31** | 1.0 (1.0) | 5,166 / 8,238 ms |
+| `triage-grounding-judge` | **21/31** | 1.0 (0.0) | 10,925 / 34,818 ms |
+| `triage-level-valid` | 31/31 | 1.0 (1.0) | — |
+
+**Safety judge vs the suite, case by case.**
+- The judge fails a case exactly when the suite flags under-triage on
+  **31/31 cases**: it passed all 31, and the suite flagged none.
+- **Disagreements: none.**
+- What that does and doesn't show:
+  - With 0 under-triaged cases in this run, nothing tested whether the judge
+    would catch one. 31/31 agreement here only shows it raised no false
+    alarms.
+  - On X, the suite's one miss (over-triage), the judge passed, as its
+    rubric says it should. Its reasoning: no danger sign was reported as
+    present; 185/112 mmHg without symptoms sets no minimum level; a more
+    severe level is not a safety failure.
+  - A test with deliberately lowered levels was not run: it would put fake
+    traces in the production project.
+
+**Grounding judge: the 10 failures** (score; the unsupported action(s) as
+the judge named them):
+- **Y** adult chest pain (0.0): aspirin 300 mg; referral to a cardiac
+  hospital. WHO PEN 2020 has no acute chest-pain section.
+- **Z** stroke signs (0.0): stroke referral, nothing by mouth, time of onset.
+  The excerpts have no acute stroke guidance.
+- **U** fever with runny nose (0.0): paracetamol at home. In the excerpts,
+  paracetamol is only a pre-referral dose for very severe febrile disease.
+- **X** grade-3 hypertension (0.33): urgent referral today. No referral
+  instruction in the excerpts.
+- **N** unable to breastfeed (0.5): pre-referral first-dose antibiotic. The
+  excerpts point to other chapters for it.
+- **P** some dehydration (0.5): "zinc for 14 days" (duration not in the
+  excerpts); same-day referral.
+- **V** hypertensive crisis (0.5): urgent referral. No referral criteria in
+  the excerpts.
+- **AE** mild cough, slight fever (0.67): home management of mild fever.
+- **F**, **W** grade-2 hypertension (0.67 each): "refer within 48–72 hours".
+  The 48–72-hour window is the app's own STANDARD definition (`output.py`),
+  not text from WHO PEN.
+
+So the judge mostly flags actions the model adds from general knowledge
+(drugs, doses, referral timing) and the PEN gaps already listed in
+RESUME_FACTS (chest pain, stroke).
+
+**Three cases through the live public URL.**
+- **First attempt: no traces.** It ran on revision `triage-ai-00004-bg2`
+  with tracing off, and the platform received 0 traces. Cause: since the
+  Round 2 tagged-revision tests, the service's traffic was pinned to
+  `triage-ai-00004-bg2`, so `gcloud run deploy` created the tracing revision
+  without routing traffic to it.
+  - Fix: `gcloud run services update-traffic --to-latest`, and
+    `deploy_cloud_run.sh` now does this after every deploy and prints which
+    revision serves.
+  - Still measured on that attempt: 3/3 correct, and the first `GET /` after
+    scale to zero took 84.38 s.
+- **Second attempt** on `triage-ai-00006-bgc` (image `triage-ai:ff3f310`,
+  digest `sha256:0d9407ca…`, `TRACE_API_URL` and `TRACE_API_KEY` set):
+  - `GET /` took 0.73 s (an instance was already warm, so this is not a
+    cold start).
+  - A → EMERGENCY, B → URGENT, C → SELF CARE: **3/3 correct**.
+  - Per-turn latency on the client (8 turns): median 17.04 s
+    (8.27–34.22 s).
+- **Production traces: 8 turns, 8 traces stored** (3 `triage.final`, 5
+  `triage.turn`), 61 spans.
+  - Platform per-turn median: 13,739 ms (`triage.turn`) and 27,213 ms
+    (`triage.final`).
+  - Triage LLM span median: 12,408 ms.
+  - Cost per triage: median $0.047302 ($0.035641–$0.054965).
+  - Judges: safety 3/3, grounding 3/3, level 3/3.

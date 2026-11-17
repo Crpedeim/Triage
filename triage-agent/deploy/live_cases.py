@@ -64,7 +64,7 @@ def main() -> None:
             msg = case["vignette"]
         cited = [l.strip("-* ") for l in card.split("Based on:")[-1].splitlines()
                  if l.strip("-* ").startswith(("WHO", "curated"))][:3] if "Based on:" in card else []
-        row = {"id": cid, "expected": case["expected"], "level": level, "correct": level == case["expected"],
+        row = {"id": cid, "thread_id": tid, "expected": case["expected"], "level": level, "correct": level == case["expected"],
                "turn_seconds": turns, "total_seconds": round(sum(turns), 2), "cited": cited}
         report.append(row)
         print(f"{cid:28} expected={case['expected']:9} got={level!s:9} {'OK ' if row['correct'] else 'MISS'} "

@@ -125,5 +125,10 @@ gcloud run deploy "$SERVICE" \
   --min-instances "${MIN_INSTANCES:-0}" --max-instances "$MAX_INSTANCES" \
   --session-affinity --port 8080 "$AUTH"
 
+# A traffic split pinned to a revision (e.g. by tagged-revision tests) survives
+# "gcloud run deploy": the new revision would get no traffic. Route to latest.
+gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest >/dev/null
+echo "==> Traffic: 100% to $(gcloud run services describe "$SERVICE" --region "$REGION" --format 'value(status.traffic[0].revisionName)')"
+
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format 'value(status.url)')
 echo "==> Deployed: ${URL}"

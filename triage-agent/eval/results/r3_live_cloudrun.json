@@ -1,0 +1,57 @@
+{
+  "url": "https://triage-ai-827630707333.us-central1.run.app",
+  "cases": [
+    {
+      "id": "A_severe_pneumonia",
+      "thread_id": "live-A_severe_pne-82f89741",
+      "expected": "emergency",
+      "level": "emergency",
+      "correct": true,
+      "turn_seconds": [
+        17.78,
+        16.29,
+        27.78
+      ],
+      "total_seconds": 61.85,
+      "cited": [
+        "WHO IMCI handbook (2005) > 7.2 How to classify cough or difficult breathing",
+        "WHO IMCI handbook (2005) > 7.1 How to assess a child with cough or difficult breathing",
+        "WHO IMCI chart booklet (2014) > THEN ASK ABOUT MAIN SYMPTOMS"
+      ]
+    },
+    {
+      "id": "B_pneumonia_fast_breathing",
+      "thread_id": "live-B_pneumonia_-b22e886a",
+      "expected": "urgent",
+      "level": "urgent",
+      "correct": true,
+      "turn_seconds": [
+        14.31,
+        8.27,
+        34.22
+      ],
+      "total_seconds": 56.8,
+      "cited": [
+        "WHO IMCI chart booklet (2014) > THEN ASK ABOUT MAIN SYMPTOMS",
+        "WHO IMCI handbook (2005) > 7.1 How to assess a child with cough or difficult breathing",
+        "WHO IMCI handbook (2005) > 7.2 How to classify cough or difficult breathing"
+      ]
+    },
+    {
+      "id": "C_cough_or_cold",
+      "thread_id": "live-C_cough_or_c-40367000",
+      "expected": "self_care",
+      "level": "self_care",
+      "correct": true,
+      "turn_seconds": [
+        10.46,
+        25.28
+      ],
+      "total_seconds": 35.74,
+      "cited": [
+        "WHO IMCI chart booklet (2014) > THEN ASK ABOUT MAIN SYMPTOMS > Does the child have cough or difficult breathing?",
+        "WHO IMCI handbook (2005) > 7.1 How to assess a child with cough or difficult breathing"
+      ]
+    }
+  ]
+}
