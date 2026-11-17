@@ -124,3 +124,101 @@ improvement from Phase 1.
 its `/on_send` endpoint with real Gemini calls (4-year-old, mild cough).
 Turn 1 returned an intake question in 13.3 s. Turn 2 returned the
 completion message and a SELF CARE card in 105.5 s.
+
+---
+
+## Phase 3: 31-vignette eval suite (commit `d124426`)
+
+Built **before** the Phase 2 commit was measured, so the safety changes
+could be judged on 31 cases rather than 6. The "before" run uses Phase 1
+code (`11aa2e1`), the "after" run Phase 2 code (`d124426`).
+
+**Changed:**
+- `eval/cases.json`: the 6 original cases plus 25 new ones, 31 in total.
+  - Labels: emergency 15, self_care 7, urgent 5, standard 4.
+  - Each case has its expected level, the guideline rule it comes from
+    (`basis`), the opening message, and the hidden facts the simulated
+    caregiver answers from.
+  - **Self-written from the repo's guideline text; not a clinical
+    benchmark** (see `eval/README.md` for the exclusions and the two
+    inferred labels).
+- `eval/compare.py` (before/after diff), `eval/README.md`.
+- `tests/test_eval_metrics.py` (5 tests): under-triage counting (no result
+  counts as under-triage), nearest-rank p95, cost reported as unknown while
+  any model is unpriced, and a well-formed cases file.
+
+**Under-triage** = predicted level less severe than expected, or no result.
+It is the headline safety metric from here on.
+
+---
+
+## Phase 2: safety layer (commit `423ddbf`)
+
+**Changed:**
+- **`safety.py` (new): a fixed danger-sign checklist.** Groups:
+  - IMNCI general danger signs (every child under 5)
+  - breathing: breath count, chest indrawing, stridor (children with cough or breathing complaints)
+  - dehydration signs (children with diarrhoea)
+  - stiff neck (children with fever)
+  - adult danger signs (age 5 and over)
+
+  Intake must ask every applicable group before it may complete. Each group
+  is asked as one fixed question, with no LLM call. Answers are extracted
+  into `PatientSummary.danger_sign_findings` as present, absent or unknown.
+  An item still unknown after its group was asked is not re-asked; it lowers
+  confidence and is listed on the triage card as "not assessed".
+- **`RED_FLAG_KEYWORDS` and `RESPIRATORY_RATE_THRESHOLDS` used in real code.**
+  Red flags are derived deterministically from the findings and from the
+  keywords (with synonyms; negation handled; an explicit "absent" wins).
+  Fast breathing uses the age thresholds.
+- **Override escalates to EMERGENCY.** Final level = max(LLM level, rule floor).
+  - EMERGENCY: any general danger sign, chest indrawing or stridor, severe
+    dehydration (two signs), stiff neck, an adult red flag, or a WHO PEN
+    hypertensive crisis.
+  - URGENT: fast breathing for age, or some dehydration.
+  - It never downgrades.
+- **Confidence no longer saturates.** The +0.15 red-flag and +0.05 citation
+  boosts are gone. Confidence is the top condition's confidence, minus an
+  ambiguity penalty, times a checklist-coverage factor (0.6 + 0.4 ×
+  coverage), with penalties for no citation and low completeness, capped
+  at 0.95.
+- The triage prompt shows the checklist findings and the rule-based minimum
+  level. Its level definitions now match `state.py`: IMNCI yellow (e.g.
+  pneumonia, some dehydration) → urgent, pink → emergency.
+
+**Tests:** 196 passed, 1 skipped at `423ddbf`; 201 passed, 1 skipped at
+`d124426` (adds the Phase 3 metric tests). `tests/test_safety.py` has 35
+tests: applicability, checklist gating, red-flag synonyms and negation,
+every threshold boundary, every floor rule, never downgrading, confidence,
+and a real-graph run reproducing Phase 0 case A, which now ends EMERGENCY.
+
+Three existing tests were updated because they encoded the replaced
+behaviour: chest indrawing → URGENT, the +0.15 red-flag confidence boost,
+and 0.4 confidence for an empty differential (now 0.3 with nothing cited).
+
+**Eval:** 31 cases, `--driver run_turn --concurrency 4`.
+
+| Metric | Before (Phase 1 code) | After (Phase 2 code) |
+|---|---|---|
+| Accuracy | 18/31 | **30/31** |
+| **Under-triage** | **10/31** (A, B, G, I, K, P, T, AB, AC, AD) | **0/31** |
+| Over-triage | 3/31 (F, W, X: hypertension called urgent) | 1/31 (X, grade-3 BP without symptoms, called urgent by the LLM) |
+| Safety override fired | n/a (old override) | 0/31: every fix came from the LLM, given the checklist answers and the rule floor in its prompt |
+| Confidence values | 1.0 in 23/31 | never 1.0; range 0.80–0.95; 18/31 at the 0.95 cap |
+| Intake questions per case | 1: 6, 2: 19, 3: 6 | 1: 7, 2: 21, 3: 3 |
+| Latency median / p95, all 31 | 63.65 s / 81.79 s | 53.95 s / 117.96 s |
+| Latency median / p95, cases 5–31 | 64.74 s / 81.79 s | 51.28 s / 68.03 s |
+| Tokens per triage, median | 12,534 | 12,198 |
+| LLM calls per triage, median | 9 | 7 |
+| Priced cost per triage, median (triage model only) | $0.0131–$0.0241 | $0.0127–$0.0217 |
+| LLM errors | 0 | 0 |
+
+The Phase 2 p95 (117.96 s) is a **cold-start artifact**. The run started
+right after a container restart, and the first 4 parallel cases (A–D)
+spent 31–72 s each in the retrieval node outside the LLM call. That is the
+embedding model and torch loading from a cold disk in 4 threads at once:
+the lazy loader had no lock. Without those 4 cases the p95 is 68.03 s.
+This is a real production cold-start bug, fixed in Phase 5.
+
+Fewer LLM calls per case (9 → 7) is expected: checklist questions are
+fixed text, which replaces the LLM question call on those turns.
