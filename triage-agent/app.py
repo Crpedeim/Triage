@@ -35,6 +35,13 @@ from graph import _get_current_state, create_graph, run_turn
 from output import format_agent_status, format_for_gradio
 from rag.embeddings import warm_up as warm_up_embeddings
 from rag.store import count as store_count
+from ratelimit import RateLimiter, client_ip
+
+# Per-session / per-IP limits for the public URL (env: RATE_LIMIT_SESSION,
+# RATE_LIMIT_IP, MAX_MESSAGE_CHARS). See ratelimit.py.
+RATE_LIMITER = RateLimiter()
+print(f"[app] Rate limits: session {RATE_LIMITER.session.limit}/{RATE_LIMITER.session.window_s}s, "
+      f"IP {RATE_LIMITER.ip.limit}/{RATE_LIMITER.ip.window_s}s, max {RATE_LIMITER.max_chars} chars")
 
 # ─── Initialise the graph once at startup ────────────────────────────────────
 # The graph is shared across all sessions. Each session has its own thread_id
@@ -259,8 +266,14 @@ with gr.Blocks(
 
     # ─── Event handlers ──────────────────────────────────────────────────
 
-    def on_send(msg, hist, tid):
+    def on_send(msg, hist, tid, request: gr.Request):
         tid = tid or str(uuid.uuid4())
+        if msg and msg.strip():
+            blocked = RATE_LIMITER.check(msg, tid, client_ip(request))
+            if blocked:
+                # Not processed: no LLM call, nothing written to the checkpoint.
+                hist = hist + [{"role": "user", "content": msg}, {"role": "assistant", "content": blocked}]
+                return hist, msg, "⏳ Rate limit reached", gr.update(), tid
         return (*chat(msg, hist, tid), tid)
 
     demo.load(
