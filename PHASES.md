@@ -368,3 +368,77 @@ the final full run (Phase 6).
 
 **Tests at `d466cad`** (clean worktree): 221 passed, 3 skipped. With
 `TEST_POSTGRES_URL` set, 223 passed, 1 skipped (the original API-key test).
+
+---
+
+## Phase 6: container, Vertex AI and Cloud Run (commit `cadbfe1`)
+
+**Changed:**
+- **Vertex AI provider** (`LLM_PROVIDER=vertexai`, `llm.py`):
+  `ChatGoogleGenerativeAI(vertexai=True, project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_LOCATION or "global")`,
+  authenticated by Application Default Credentials (the Cloud Run service
+  account). Pinned to `langchain-google-genai==4.3.0` and
+  `google-genai==2.8.0`, because every `google-genai` release from 2.9
+  needs pydantic ≥ 2.12.5 and Gradio 5.50.0 needs ≤ 2.12.3.
+- **`Dockerfile`:**
+  - `python:3.13-slim`, CPU-only torch 2.15.0
+  - embedding model and sample knowledge base baked in; Hugging Face
+    offline at runtime
+  - runs as uid 10001
+  - an optional build-only CA secret that never lands in a layer
+- **`deploy/deploy_cloud_run.sh` + `deploy/CLOUD_RUN.md`.** The script is
+  idempotent. It enables the APIs, creates the Artifact Registry repo and a
+  runtime service account (`roles/aiplatform.user`), builds with Cloud
+  Build, and runs `gcloud run deploy`. Optional: Cloud SQL Postgres,
+  tracing, Secret Manager secrets.
+- **UI sessions survive restarts.** The session id moved from `gr.State`
+  (server memory, lost on restart even with Postgres) to `gr.BrowserState`,
+  encrypted with a stable `BROWSER_STATE_SECRET`, and the chat is rebuilt
+  from the checkpoint on page load.
+- Requirements split into runtime (`requirements.txt`) and
+  `requirements-dev.txt`.
+
+**Deployment status: NOT deployed.** The build environment had no Google
+Cloud credentials, so there is **no live URL**. Neither the deploy script
+nor the Vertex AI code path has been run against Google Cloud. The Vertex
+path is covered by 4 offline unit tests only.
+
+**Measured locally** (Docker 29.9.2 in the build environment):
+
+| Check | Result |
+|---|---|
+| Clean build / rebuild after an `app.py` change | 283 s / 27 s |
+| Image size | 3,642,898,126 bytes (3.64 GB); site-packages 2.3 GB |
+| torch in the image | `2.15.0+cpu`, CUDA `None`, 0 NVIDIA packages |
+| Secrets or proxy settings in the image or its history | none found |
+| Start → HTTP 200 (model loaded before serving) | 8.3 s |
+| Memory: idle / after one complete triage | 464.3 MiB / 497.2 MiB |
+| Case A through the container's Gradio API (real Gemini, `openai` provider) | 3 turns: 12.6 s, 12.0 s, 25.1 s → **EMERGENCY** (Phase 0: STANDARD) |
+| Browser restart test (Playwright and Chromium, Postgres-backed) | after replacing the container (9.0 s) and reloading, 1/1 user and 1/1 bot messages restored; the next answer advanced the interview |
+| Same restart test **without** `BROWSER_STATE_SECRET` | 0 messages restored; new interview (Gradio's per-launch random key) |
+
+**Tests:** 228 passed, 3 skipped. With `TEST_POSTGRES_URL` set: 230 passed,
+1 skipped. New: `tests/test_llm_providers.py` (4), `tests/test_app_restore.py` (3).
+
+**Final full eval on this commit** (31 cases, the same settings as every
+31-case run; this run includes the Phase 5c loop-back fix):
+
+| Metric | Phase 1 code | Phase 2 code | Phase 5b | **Final (`cadbfe1`)** |
+|---|---|---|---|---|
+| Accuracy | 18/31 | 30/31 | 28/31 | **29/31** |
+| **Under-triage** | **10/31** | 0/31 | 0/31 | **0/31** |
+| Over-triage | 3/31 | 1/31 | 3/31 | 2/31 (F, X) |
+| Latency median / p95 | 63.65 / 81.79 s | 53.95 / 117.96 s | 36.95 / 52.56 s | **39.92 / 49.08 s** |
+| Completing turn median / p95 | not recorded | not recorded | 22.03 / 41.57 s | 22.77 / 38.29 s |
+| Median latency per user turn (all 90 turns) | not recorded | not recorded | not computed | 9.84 s |
+| Tokens per triage, median | 12,534 | 12,198 | 10,891 | 11,189 |
+| LLM calls per triage, median | 9 | 7 | 5 | 5 |
+| Priced cost per triage, median (triage model only) | $0.0131–$0.0241 | $0.0127–$0.0217 | $0.0133–$0.0216 | $0.0135–$0.0219 |
+| LLM errors | 0 | 0 | 1 | **0** |
+| Confidence range | 1.0 in 23/31 | 0.80–0.95 | 0.75–0.95 | 0.782–0.95 (19/31 at the cap) |
+
+There were no loop-backs in the final run, so the 5c fix was not exercised
+by real LLM calls here; it is covered by its tests. Between 5b and final the
+latency-relevant code is identical apart from 5c, and the median moved
+36.95 s → 39.92 s. About 3 s of run-to-run variation is the noise floor
+for these comparisons.
