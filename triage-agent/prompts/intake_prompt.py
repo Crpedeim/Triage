@@ -68,6 +68,11 @@ Map these to clinical terms:
 All field values must be in ENGLISH regardless of what language was used in conversation."""
 
 
+EXTRACTION_REQUEST = (
+    "Extract the PatientSummary from the conversation above, following the rules in the system message."
+)
+
+
 def question_prompt(
     summary: PatientSummary,
     follow_up_questions: list[str],

@@ -26,6 +26,7 @@ class StubLLM:
         self.structured = {k: list(v) for k, v in (structured or {}).items()}
         self.questions = list(questions or [])
         self.log: list[dict] = []
+        self.errors: list[str] = []   # every request the stub rejected or failed
 
     # ── LangChain surface used by the agents ──────────────────────────────
     def with_structured_output(self, schema, **_kw):
@@ -36,10 +37,15 @@ class StubLLM:
         cm = get_callback_manager_for_config(ensure_config())
         runs = cm.on_chat_model_start({"name": "StubLLM"}, [list(messages)], invocation_params={"model": self.model})
         try:
+            # Mirror Gemini: "Requests ending with a model turn are not supported."
+            # (HTTP 400 seen in the Phase 5 eval on every low-confidence loop-back)
+            if messages and isinstance(list(messages)[-1], AIMessage):
+                raise ValueError("Error code: 400 - Requests ending with a model turn are not supported.")
             if kind in self.fail_kinds:
                 raise RuntimeError(f"stub failure: {kind}")
             out = fn()
         except Exception as e:
+            self.errors.append(f"{kind}: {e}")
             for r in runs:
                 r.on_llm_error(e)
             raise

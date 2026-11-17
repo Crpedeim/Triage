@@ -53,6 +53,7 @@ import safety
 from llm import get_fast_llm
 from prompts.intake_prompt import (
     COMPLETION_MESSAGE,
+    EXTRACTION_REQUEST,
     EXTRACTION_SYSTEM,
     FALLBACK_QUESTION,
     QUESTION_SYSTEM,
@@ -79,7 +80,12 @@ def intake_agent(state: TriageState) -> dict:
     llm = get_fast_llm()
 
     # ─── Step 1: Extract PatientSummary from conversation ─────────────────
-    extraction_messages = [SystemMessage(content=EXTRACTION_SYSTEM)] + list(messages)
+    # The request must END WITH A USER TURN: after a low-confidence loop-back
+    # intake runs straight after triage and the conversation ends with the
+    # AI's own message, which Gemini rejects with HTTP 400 ("Requests ending
+    # with a model turn are not supported"; every loop-back in the Phase 5 eval).
+    extraction_messages = [SystemMessage(content=EXTRACTION_SYSTEM), *messages,
+                           HumanMessage(content=EXTRACTION_REQUEST)]
     structured_llm = llm.with_structured_output(PatientSummary)
 
     summary = None

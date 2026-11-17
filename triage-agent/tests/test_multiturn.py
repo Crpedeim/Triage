@@ -106,6 +106,7 @@ def test_run_turn_real_graph_three_turns_reaches_intake_and_completes():
     # Turn 3: intake completes and the same run goes retrieval → triage → output
     assert r3["is_complete"] and r3["phase"] == "done"
     assert "URGENT" in r3["triage_card"]
+    assert llm.errors == []
     # Exactly one extraction per turn; one triage call in total
     assert llm.count("structured:PatientSummary") == 3
     assert llm.count("structured:TriageResult") == 1
@@ -160,6 +161,7 @@ def test_low_confidence_loop_reruns_triage():
             answers += 1
 
     assert r2["is_complete"] and r2["phase"] == "done"
+    assert llm.errors == [], "no LLM request may be rejected (e.g. ending with a model turn)"
     assert answers == queued, "one user answer per queued follow-up question"
     assert llm.count("structured:TriageResult") == 2, "triage must re-run after the feedback loop"
     assert r2["state"]["triage_confidence"] >= 0.75
@@ -183,6 +185,7 @@ def test_low_confidence_loop_terminates_at_max_cycles():
             if r["is_complete"]:
                 break
     assert r["is_complete"] and r["phase"] == "done"
+    assert llm.errors == []
     assert llm.count("structured:TriageResult") == 3  # max_cycles = 3
     assert r["state"]["cycle_count"] == 2
 
@@ -396,3 +399,19 @@ def test_retrieval_retry_continues_when_new_chunks_appear():
          patch("agents.retrieval.evaluate_relevance", side_effect=lambda *a, **k: {"score": 1, "missing_aspects": []}):
         r = run_turn(app, str(uuid.uuid4()), "3 year old, cough, 36/min, drinking well, alert")
     assert r["state"]["retrieval_attempts"] == 3  # every retry brought a new chunk → full 3 attempts
+
+
+def test_extraction_request_ends_with_user_turn_even_after_ai_message():
+    from agents.intake import intake_agent
+    from langchain_core.messages import AIMessage, HumanMessage
+    from state import create_initial_state
+
+    llm = StubLLM(structured={"PatientSummary": [summary(0.9)]})
+    s = create_initial_state()
+    s["messages"] = [HumanMessage(content="3 year old with cough"), AIMessage(content="Thank you, assessing now.")]
+    s["follow_up_questions"] = ["Is there stridor?"]
+    with patch("agents.intake.get_fast_llm", return_value=llm):
+        intake_agent(s)
+    assert llm.errors == []
+    sent = llm.calls("structured:PatientSummary")[0]["messages"]
+    assert isinstance(sent[-1], HumanMessage)
