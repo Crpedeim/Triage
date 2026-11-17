@@ -42,7 +42,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from llm import get_fast_llm
+from llm import get_fast_llm, response_text
 from prompts.intake_prompt import (
     COMPLETION_SYSTEM,
     EXTRACTION_SYSTEM,
@@ -91,7 +91,7 @@ def intake_agent(state: TriageState) -> dict:
             HumanMessage(content=f"Patient summary: {summary.chief_complaint}. "
                                   f"Completeness: {summary.completeness_score:.0%}"),
         ])
-        completion_msg = AIMessage(content=completion_response.content)
+        completion_msg = AIMessage(content=response_text(completion_response))
         return {
             "messages": [completion_msg],
             "patient_summary": summary,
@@ -112,7 +112,7 @@ def intake_agent(state: TriageState) -> dict:
         HumanMessage(content=prompt_text),
     ])
 
-    question_msg = AIMessage(content=question_response.content)
+    question_msg = AIMessage(content=response_text(question_response))
 
     # If we consumed a follow-up question from the Triage Agent, remove it
     # from the queue so we don't ask the same question twice
@@ -133,6 +133,6 @@ def _extract_chief_complaint_fallback(messages: list) -> str:
     """
     for msg in messages:
         if isinstance(msg, HumanMessage):
-            text = msg.content if isinstance(msg.content, str) else str(msg.content)
+            text = response_text(msg)
             return text[:200]
     return "Patient complaint not captured"

@@ -6,6 +6,7 @@ langchain-core>=0.3.0
 # ─── LLM Providers ───
 langchain-anthropic>=0.3.0       # Claude API integration
 langchain-openai>=0.3.0          # OpenAI fallback (optional)
+langchain-google-genai>=2.0.0    # Gemini integration
 
 # ─── RAG Pipeline ───
 chromadb>=0.5.0                  # Vector store
@@ -19,7 +20,7 @@ langchain-text-splitters>=0.3.0  # RecursiveCharacterTextSplitter
 pydantic>=2.0.0                  # Structured schemas
 
 # ─── Frontend ───
-gradio>=5.0.0
+gradio>=6.0.0,<7.0.0           # app.py uses the Gradio 6 API (messages-format Chatbot)
 
 # ─── Testing ───
 pytest>=8.0.0

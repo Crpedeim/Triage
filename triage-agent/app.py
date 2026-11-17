@@ -53,7 +53,7 @@ else:
 
 def chat(
     user_message: str,
-    history: list[tuple[str, str]],
+    history: list[dict],
     thread_id: str,
 ) -> tuple[list, str, str, str]:
     """
@@ -61,7 +61,7 @@ def chat(
 
     Args:
         user_message: What the health worker typed.
-        history:      Gradio chat history [(user_msg, bot_msg), ...]
+        history:      Gradio chat history in messages format [{"role", "content"}, ...]
         thread_id:    Unique session ID (stored in gr.State)
 
     Returns:
@@ -76,7 +76,8 @@ def chat(
             "Run this command first:\n```\npython -m rag.ingest --sample\n```\n"
             "Then restart the app."
         )
-        history.append((user_message, warning))
+        history.append({"role": "user", "content": user_message})
+        history.append({"role": "assistant", "content": warning})
         return history, "", _status_text("idle"), ""
 
     # Process the turn through LangGraph
@@ -84,7 +85,8 @@ def chat(
 
     # Update chat history
     bot_message = result["message"]
-    history.append((user_message, bot_message))
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": bot_message})
 
     # Build outputs
     status = result["status"]
@@ -113,14 +115,14 @@ def _status_text(state: str) -> str:
 
 # ─── Build the Gradio UI ──────────────────────────────────────────────────────
 
-with gr.Blocks(
-    title="TriageAI — Clinical Triage System",
-    theme=gr.themes.Soft(primary_hue="teal"),
-    css="""
-    .triage-card { background: #f0fdf4; border-left: 4px solid #14b8a6; padding: 1rem; border-radius: 4px; }
-    .status-bar  { font-size: 0.9rem; color: #64748b; padding: 0.25rem 0; }
-    """,
-) as demo:
+# Gradio 6: theme and css are passed to launch(), not Blocks()
+THEME = gr.themes.Soft(primary_hue="teal")
+CSS = """
+.triage-card { background: #f0fdf4; border-left: 4px solid #14b8a6; padding: 1rem; border-radius: 4px; }
+.status-bar  { font-size: 0.9rem; color: #64748b; padding: 0.25rem 0; }
+"""
+
+with gr.Blocks(title="TriageAI — Clinical Triage System") as demo:
 
     # ─── Header ──────────────────────────────────────────────────────────
     gr.Markdown(
@@ -140,8 +142,6 @@ with gr.Blocks(
             chatbot = gr.Chatbot(
                 label="Clinical Intake",
                 height=460,
-                bubble_full_width=False,
-                avatar_images=(None, "🏥"),
             )
             with gr.Row():
                 msg_input = gr.Textbox(
@@ -219,5 +219,7 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", "7860")),
         share=False,
+        theme=THEME,
+        css=CSS,
         show_error=True,
     )

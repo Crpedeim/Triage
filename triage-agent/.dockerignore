@@ -1,0 +1,10 @@
+.env
+.env.*
+__pycache__/
+*.pyc
+chroma_db/
+.hf_cache/
+.pytest_cache/
+tests/
+desktop.ini
+.git

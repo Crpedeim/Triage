@@ -170,7 +170,7 @@ def evaluate_relevance(
     Retrieval Agent's self-correcting loop, not at the start. The pattern is:
         search → if score >= 3: return | else: reformulate → search again
     """
-    from llm import get_fast_llm
+    from llm import get_fast_llm, response_text
 
     if not retrieved_docs:
         return {
@@ -224,7 +224,7 @@ Evaluate the relevance of the retrieved chunks for triaging this patient case.""
     import re
     try:
         # Strip any accidental markdown
-        raw = response.content.strip()
+        raw = response_text(response).strip()
         raw = re.sub(r'^```json\s*', '', raw)
         raw = re.sub(r'\s*```$', '', raw)
         parsed = json.loads(raw)

@@ -597,7 +597,7 @@ class TestLLMProvider:
         """All providers have default model names defined."""
         from llm import DEFAULT_MODELS, FAST_MODELS
 
-        expected_providers = {"anthropic", "openai", "groq", "together", "ollama"}
+        expected_providers = {"anthropic", "openai", "google", "groq", "together", "ollama"}
         assert set(DEFAULT_MODELS.keys()) == expected_providers
         assert set(FAST_MODELS.keys()) == expected_providers
 

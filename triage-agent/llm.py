@@ -8,6 +8,7 @@ Swap providers by changing LLM_PROVIDER in your .env — zero code changes anywh
 Supported providers (set LLM_PROVIDER in .env):
     anthropic   → Claude Sonnet 4 (default, best reasoning)
     openai      → GPT-4o-mini (fast, cheap)
+    google      → Gemini Flash via Google AI Studio (needs GOOGLE_API_KEY)
     groq        → Llama 3.3 70B via Groq (fastest inference, free tier)
     together    → Llama 3.3 70B via Together AI (good free tier)
     ollama      → Any local model via Ollama (fully offline, no API key)
@@ -47,13 +48,14 @@ from langchain_core.language_models import BaseChatModel
 load_dotenv()
 
 # ─── Supported provider type ───
-Provider = Literal["anthropic", "openai", "groq", "together", "ollama"]
+Provider = Literal["anthropic", "openai", "google", "groq", "together", "ollama"]
 
 # ─── Model name overrides per provider ───
 # These are the defaults. Override via MODEL_NAME in .env for any provider.
 DEFAULT_MODELS: dict[str, str] = {
     "anthropic": "claude-sonnet-4-5",
     "openai": "gpt-4o-mini",
+    "google": "gemini-flash-latest",
     "groq": "llama-3.3-70b-versatile",
     "together": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
     "ollama": "llama3.2",          # run: ollama pull llama3.2
@@ -63,6 +65,7 @@ DEFAULT_MODELS: dict[str, str] = {
 FAST_MODELS: dict[str, str] = {
     "anthropic": "claude-haiku-4-5-20251001",
     "openai": "gpt-4o-mini",
+    "google": "gemini-flash-latest",
     "groq": "llama-3.1-8b-instant",
     "together": "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
     "ollama": "llama3.2",
@@ -159,6 +162,19 @@ def _build_llm(model_name: str, provider: Provider, temperature: float = 0.0) ->
             together_api_key=api_key,
         )
 
+    elif provider == "google":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "GOOGLE_API_KEY not set. Get a key at aistudio.google.com/apikey"
+            )
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            temperature=temperature,
+            google_api_key=api_key,
+        )
+
     elif provider == "ollama":
         # pip install langchain-ollama
         # Ollama must be running locally: https://ollama.ai
@@ -226,3 +242,25 @@ def get_llm_info() -> dict:
         "fast_model": os.getenv("FAST_MODEL_NAME", FAST_MODELS[provider]),
         "temperature": 0.0,
     }
+
+
+def response_text(message) -> str:
+    """
+    Return the plain text of an LLM response message.
+
+    Some providers (e.g. Gemini) return .content as a list of content blocks
+    like [{"type": "text", "text": "..."}] instead of a plain string.
+    Always read model output through this helper so agents work with any provider.
+    """
+    content = getattr(message, "content", message)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type", "text") == "text":
+                parts.append(block.get("text", ""))
+        return "".join(parts).strip()
+    return str(content)

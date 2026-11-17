@@ -217,6 +217,18 @@ def run_turn(
             config=thread_config,
         )
 
+    # ─── Resume through the intake breakpoint ─────────────────────────────
+    # invoke() with new input starts a fresh run at the supervisor, which then
+    # pauses BEFORE intake (interrupt_before=["intake"]). If we stopped here the
+    # intake agent would never see the user's message. So while the graph is
+    # paused before intake and the newest message is the user's, resume with
+    # invoke(None) — that runs intake (and anything after it) until the next
+    # pause, which is when intake has asked its next question, or until the end.
+    for _ in range(3):
+        if not _paused_before_intake_with_user_reply(app, thread_config):
+            break
+        app.invoke(None, config=thread_config)
+
     # ─── Read the updated state ───────────────────────────────────────────
     state = _get_current_state(app, thread_config)
 
@@ -257,6 +269,23 @@ def _get_current_state(app, config: dict) -> dict | None:
     except Exception:
         pass
     return None
+
+
+def _paused_before_intake_with_user_reply(app, config: dict) -> bool:
+    """
+    True when the graph is waiting at the intake breakpoint and the most
+    recent message is from the user (i.e. intake still has to answer it).
+    """
+    from langchain_core.messages import HumanMessage as _Human
+    try:
+        snapshot = app.get_state(config)
+        pending = snapshot.next if snapshot else ()
+        if not isinstance(pending, tuple) or "intake" not in pending:
+            return False
+        messages = (snapshot.values or {}).get("messages", [])
+        return bool(messages) and isinstance(messages[-1], _Human)
+    except Exception:
+        return False
 
 
 def _get_last_ai_message(state: dict) -> str:

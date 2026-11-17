@@ -38,7 +38,7 @@ import re
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from llm import get_fast_llm
+from llm import get_fast_llm, response_text
 from prompts.retrieval_prompt import query_generation_prompt
 from state import TriageState
 from tools.vector_search import (
@@ -86,7 +86,7 @@ def retrieval_agent(state: TriageState) -> dict:
             HumanMessage(content=query_prompt),
         ])
 
-        queries = _parse_queries(response.content)
+        queries = _parse_queries(response_text(response))
         if not queries:
             # Fallback: build simple queries from patient summary
             queries = _fallback_queries(summary)
