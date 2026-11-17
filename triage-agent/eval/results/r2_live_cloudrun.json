@@ -1,0 +1,43 @@
+{
+  "url": "https://triage-ai-827630707333.us-central1.run.app",
+  "cases": [
+    {
+      "id": "A_severe_pneumonia",
+      "expected": "emergency",
+      "level": "emergency",
+      "correct": true,
+      "turn_seconds": [
+        13.34,
+        4.97,
+        28.32
+      ],
+      "total_seconds": 46.63,
+      "cited": []
+    },
+    {
+      "id": "B_pneumonia_fast_breathing",
+      "expected": "urgent",
+      "level": "urgent",
+      "correct": true,
+      "turn_seconds": [
+        12.12,
+        12.6,
+        22.27
+      ],
+      "total_seconds": 46.99,
+      "cited": []
+    },
+    {
+      "id": "C_cough_or_cold",
+      "expected": "self_care",
+      "level": "self_care",
+      "correct": true,
+      "turn_seconds": [
+        8.73,
+        18.53
+      ],
+      "total_seconds": 27.26,
+      "cited": []
+    }
+  ]
+}

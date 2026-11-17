@@ -832,3 +832,38 @@ spoofed. (No IP address is recorded here.)
 instances, a client whose requests land on both instances can get up to
 twice the limit; session affinity normally keeps a browser on one instance.
 A restart resets the counters. Clients behind one NAT share the IP limit.
+
+## R2 Phase 5: redeploy and verify on the live URL
+
+**Live URL:** https://triage-ai-827630707333.us-central1.run.app (alias
+`https://triage-ai-djfukd3v2a-uc.a.run.app`). Service `triage-ai`, project
+`gen-lang-client-0005933941`, region `us-central1`, revision
+`triage-ai-00004-bg2`, image `triage-ai:f23f447` (Phases 1–4), deployed with
+`deploy/deploy_cloud_run.sh` (configuration in R2 Phase 4).
+
+**Cold start (public URL, after the service had scaled to zero):** the
+instance count reached 0 at 11:20:11 UTC (Cloud Monitoring); the first
+`GET /` at 11:20:19 took **50.35 s** end to end (curl, from this laptop).
+Cloud Run's logs for that instance (`087db6ae`, AUTOSCALING): "Starting new
+instance" → "STARTUP TCP probe succeeded" **49.40 s**. The next three page
+loads took 0.69, 0.69 and 0.84 s.
+
+**Three cases through the live URL** (`deploy/live_cases.py`: the app's
+public Gradio API `/on_send`, the same call the browser makes; one new
+conversation per case; scripted caregiver that answers every question with
+the case's vignette from `eval/cases.json`; turn times measured on the
+client, including network). Result file:
+`triage-agent/eval/results/r2_live_cloudrun.json`.
+
+| Case | Expected | Live result | Turn times (s) | Total |
+|---|---|---|---|---|
+| A: 3-year-old, 50 breaths/min, chest indrawing | emergency | **EMERGENCY** | 13.34, 4.97, 28.32 | 46.63 s |
+| B: 3-year-old, 46 breaths/min, no indrawing | urgent | **URGENT** | 12.12, 12.60, 22.27 | 46.99 s |
+| C: 4-year-old, mild cough, 28 breaths/min | self_care | **SELF CARE** | 8.73, 18.53 | 27.26 s |
+
+**3/3 correct.** Per-turn latency on the live URL (8 turns): median
+**12.97 s**, min 4.97 s, max 28.32 s; the slowest turn in each case is the
+completing turn (retrieval + judge + triage). The cases ran right after the
+cold start, on a warm instance. The script did not capture the cited
+sections in this run (a parsing bug, fixed afterwards); the card citing WHO
+IMCI sections was seen in the browser in R2 Phase 3.
