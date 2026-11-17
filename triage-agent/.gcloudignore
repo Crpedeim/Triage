@@ -1,0 +1,16 @@
+# Files NOT uploaded to Cloud Build. Mirrors .gitignore, except that the WHO
+# PDFs in rag/guidelines/ ARE uploaded (iris.who.int returns HTTP 403 to Cloud
+# Build, so the hash-checked local copies go in the private build upload; the
+# Dockerfile keeps them out of the final image).
+.gcloudignore
+.git
+.gitignore
+__pycache__/
+*.pyc
+.env
+.env.*
+chroma_db/
+.pytest_cache/
+eval/results/
+desktop.ini
+rag/guidelines/*.part

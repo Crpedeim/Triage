@@ -9,6 +9,4 @@ desktop.ini
 Dockerfile
 .dockerignore
 
-# WHO PDFs are fetched (sha256-checked) inside the build, never copied in
-rag/guidelines/*.pdf
 rag/guidelines/*.part

@@ -1,0 +1,23 @@
+# Cloud Build config for the TriageAI image.
+#
+# The Dockerfile uses BuildKit features (RUN --mount for the optional build
+# CA secret), which Cloud Build's default `gcloud builds submit --tag` path does
+# not enable ("the --mount option requires BuildKit"). This config turns it on.
+#
+#   gcloud builds submit triage-agent \
+#     --config triage-agent/deploy/cloudbuild.yaml \
+#     --substitutions _IMAGE=REGION-docker.pkg.dev/PROJECT/REPO/triage-ai:TAG
+#
+# The build downloads the WHO guideline PDFs from iris.who.int and builds the
+# knowledge base (see rag/build_kb.py), so it needs outbound network access.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    env:
+      - DOCKER_BUILDKIT=1
+    args: ["build", "--progress=plain", "-t", "${_IMAGE}", "."]
+images:
+  - "${_IMAGE}"
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+timeout: 3600s
