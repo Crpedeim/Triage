@@ -1,92 +1,72 @@
-# Deploying TriageAI to Google Cloud Run (Gemini via Vertex AI)
+# Deploying TriageAI to Google Cloud Run
 
-> **Status:** the image was built and run locally (see "Verified locally").
-> The Cloud Run deploy itself has **not been run**: the build environment
-> had no Google Cloud credentials. There is no live URL yet. After you
-> deploy, record the URL in `PHASES.md` (Phase 6) and `RESUME_FACTS.md`.
+> **Status:** deployed with `deploy/deploy_cloud_run.sh` (Round 2). The live
+> URL, cold start and per-turn latency are recorded in `PHASES.md`
+> (R2 Phase 5) and `RESUME_FACTS.md`.
 
 ## What gets deployed
-- **Image** (`triage-agent/Dockerfile`):
+- **Image** (`triage-agent/Dockerfile`, multi-stage):
   - `python:3.13-slim`, CPU-only torch 2.15.0, pinned `requirements.txt`
-  - the `all-MiniLM-L6-v2` embedding model and the sample guideline
-    knowledge base baked in; the service never contacts Hugging Face
-    (`HF_HUB_OFFLINE=1`)
+  - the `all-MiniLM-L6-v2` embedding model and the **WHO guideline knowledge
+    base** (874 chunks from the IMCI chart booklet 2014, IMCI handbook 2005
+    and WHO PEN 2020) built at image build time in the `kb` stage; the
+    service never contacts Hugging Face or WHO and never ingests at startup
+  - the WHO PDFs are in no layer of the final image
   - runs as a non-root user (uid 10001), serves Gradio on `$PORT` (8080)
-- **LLM**: `LLM_PROVIDER=vertexai`, i.e. Gemini through Vertex AI using the
-  service account's Application Default Credentials. No API key.
-  Defaults: `gemini-3.1-pro-preview` (triage) and `gemini-3.8-flash`
-  (intake, retrieval). These are the models the eval suite was run with,
-  but through the Gemini API, not Vertex AI. **Check that both are
-  available in your project and Vertex location** (preview models are often
-  `global`-only) and override with `MODEL_NAME` / `FAST_MODEL_NAME` if not.
-  The Vertex code path is covered by offline unit tests only; no Vertex call
-  has been made.
-- **Session state**:
-  - Without a database, sessions are in memory, so the script pins
-    `--max-instances 1`.
-  - With Cloud SQL for PostgreSQL (`CHECKPOINT_DB_URL`), sessions survive
-    restarts and are shared by every instance.
-  - The browser keeps the session id (`gr.BrowserState`, localStorage),
-    encrypted with `BROWSER_STATE_SECRET`. That secret must be **stable**
-    across restarts and identical on every instance. Gradio otherwise
-    generates a random one per launch and a reload starts a new
-    conversation (seen in testing). The script creates it in Secret Manager
-    when `CLOUDSQL_INSTANCE` is set.
-- **Tracing** (optional): `TRACE_API_URL` plus a `TRACE_API_KEY` secret.
+- **LLM** (`LLM_MODE`):
+  - `gemini-api` (default): Gemini through Google's OpenAI-compatible
+    endpoint with the API key in secret `gemini-api-key`;
+    `gemini-3.1-pro-preview` (triage) and `gemini-3.8-flash` (intake,
+    retrieval). Every eval in `PHASES.md` used this path.
+  - `vertexai`: Gemini on Vertex AI with the service account. Covered by
+    offline unit tests only; no Vertex call has been made.
+- **Sessions**: LangGraph `PostgresSaver` on the database in secret
+  `triage-checkpoint-db-url` (Neon: use the **direct**, non-pooled
+  connection string). The browser keeps the session id in `gr.BrowserState`,
+  encrypted with `BROWSER_STATE_SECRET` (secret
+  `triage-browser-state-secret`, 64 hex characters, must be the same on every
+  instance and across restarts). Without the database secret the script
+  keeps sessions in memory and pins max 1 instance.
+- **Rate limits** (`ratelimit.py`): 20 messages / 10 min per conversation,
+  60 / hour per client IP, 2000 characters per message (env
+  `RATE_LIMIT_SESSION`, `RATE_LIMIT_IP`, `MAX_MESSAGE_CHARS`).
 
 ## Prerequisites
-- `gcloud` authenticated (`gcloud auth login`) with Owner or equivalent on the project
-- Billing enabled on the project
-- Run everything from the `triage-agent/` directory
+- `gcloud` authenticated with Owner (or equivalent) on a project with billing
+- Secrets: `gemini-api-key`; for persistent sessions `triage-checkpoint-db-url`
+  (the script creates `triage-browser-state-secret` if missing)
+- A local Python (only the standard library is used) to fetch the WHO PDFs:
+  iris.who.int answers Cloud Build with HTTP 403, so the PDFs are fetched
+  locally (sha256-checked) and sent in the private build upload
+- Run from the `triage-agent/` directory
 
 ## One-command deploy
 ```bash
 cd triage-agent
 PROJECT_ID=my-project REGION=us-central1 ./deploy/deploy_cloud_run.sh
 ```
-The script is idempotent. It enables the Run, Cloud Build, Artifact
-Registry, Vertex AI and Secret Manager APIs. It creates the Artifact Registry
-repo `triage` and a runtime service account `triage-ai-run` with
-`roles/aiplatform.user`. It builds with Cloud Build and deploys the service.
-It prints the service URL at the end.
-
-## With persistent sessions (Cloud SQL Postgres)
-```bash
-gcloud sql instances create triage-pg --database-version=POSTGRES_16 \
-  --region=us-central1 --tier=db-f1-micro
-gcloud sql databases create triage --instance=triage-pg
-gcloud sql users create triage --instance=triage-pg --password='CHOOSE-A-PASSWORD'
-# Unix-socket URL used inside Cloud Run:
-printf 'postgresql://triage:CHOOSE-A-PASSWORD@/triage?host=/cloudsql/%s' \
-  "$(gcloud sql instances describe triage-pg --format='value(connectionName)')" \
-  | gcloud secrets create triage-checkpoint-db-url --data-file=-
-
-PROJECT_ID=my-project REGION=us-central1 \
-CLOUDSQL_INSTANCE="$(gcloud sql instances describe triage-pg --format='value(connectionName)')" \
-./deploy/deploy_cloud_run.sh
-```
-The app creates its checkpoint tables on first start (`PostgresSaver.setup()`).
-
-## With tracing
-```bash
-printf '%s' 'YOUR-PLATFORM-KEY' | gcloud secrets create triage-trace-api-key --data-file=-
-PROJECT_ID=my-project REGION=us-central1 TRACE_API_URL=https://your-platform.example \
-./deploy/deploy_cloud_run.sh
-```
-Before enabling this, check the payload shape documented in `tracing.py`
-against your platform's `/api/v1/traces` schema.
+Idempotent. It enables the APIs, creates the Artifact Registry repo `triage`
+and the runtime service account `triage-ai-run`, grants it the secrets it
+uses, fetches the PDFs, builds with `deploy/cloudbuild.yaml` (BuildKit is
+required by the Dockerfile) and deploys.
 
 ## Service settings the script uses, and why
 | Flag | Value | Reason |
 |---|---|---|
-| `--timeout` | 600 s | a completing turn makes several LLM calls; the 31-case eval's slowest whole case (all turns) was 123 s |
-| `--session-affinity` | on | Gradio keeps per-tab state (`gr.State`) on the instance that served it |
-| `--min-instances` | 1 | avoids the image cold start (model load) on the first request |
-| `--max-instances` | 1 without Cloud SQL, 10 with | in-memory sessions are per instance |
-| `--memory` | 2Gi (override with `MEMORY`) | measured 497.2 MiB after one triage locally (one session); 2Gi is headroom for `--concurrency 20`, which was not load-tested |
-| `--no-allow-unauthenticated` | default | it is a prototype handling health information; set `ALLOW_UNAUTHENTICATED=true` deliberately |
+| `--max-instances` | 2 (1 without a database) | caps cost on a public URL; sessions are in Postgres, so 2 instances share them |
+| `--session-affinity` | on | **required** with more than one instance: Gradio's job queue is in-process, and a turn whose result stream reached the other instance hung until the 300 s timeout (R2 Phase 3) |
+| `--min-instances` | 0 | scale to zero; a cold start costs about 35–52 s (R2 Phase 1) |
+| `--cpu-boost` | on | startup is dominated by Python imports |
+| `--timeout` | 300 s | the slowest whole case in the R2 eval took 92.7 s over 2 turns |
+| `--memory` / `--cpu` | 2Gi / 1 | measured 497.2 MiB after one triage locally (Phase 6) |
+| `--allow-unauthenticated` | on by default | public demo, protected by the rate limits; set `ALLOW_UNAUTHENTICATED=false` for a private service |
 
-## Verified locally (this repository's build environment, 2026-11-17)
+## Checking a deployment
+- `deploy/coldstart_from_logs.py`: instance cold starts from Cloud Run logs
+- `deploy/multiinstance_check.py`: one conversation across instances
+- `deploy/ratelimit_check.py`: rate limits on a revision deployed with small limits
+
+## Phase 6: verified locally (the earlier build environment, 2026-11-17)
 Built with `docker build` (BuildKit) from `triage-agent/`. The sandbox's
 TLS proxy CA was passed as the optional `ca` build secret.
 

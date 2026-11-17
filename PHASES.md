@@ -780,3 +780,55 @@ Done and measured:
   (3-year-old, fast breathing, chest indrawing) ended EMERGENCY as expected.
 - Afterwards the tags were removed and `triage-ai-bench` was set back to
   min 0 / max 1.
+
+## R2 Phase 4: protect the public URL (commit `f23f447` and this one)
+
+**Changed:**
+- `ratelimit.py`: in-memory sliding windows per conversation (default
+  20 messages / 10 min) and per client IP (60 / hour), plus a 2000-character
+  cap per message. All three are set by env (`RATE_LIMIT_SESSION`,
+  `RATE_LIMIT_IP`, `MAX_MESSAGE_CHARS`). A refused message is **not
+  processed**: no LLM call and no checkpoint write. The user sees "⏳ Rate
+  limit reached. This public demo allows N messages per … for this
+  conversation / your network address. Your message was not processed.
+  Please try again in about S seconds." and their text stays in the input
+  box. 7 unit tests (fake clock).
+- `deploy/deploy_cloud_run.sh` rewritten: Gemini API key or Vertex AI,
+  WHO PDFs fetched first, BuildKit build, Postgres + BrowserState secrets,
+  **max 2 instances**, session affinity, CPU boost, min 0, public by
+  default.
+- Deployed with that script: `triage-ai` revision `triage-ai-00004-bg2`
+  (image `triage-ai:f23f447`). Verified live config: maxScale 2, minScale 0,
+  session affinity on, CPU boost on, runtime service account `triage-ai-run`,
+  secrets `gemini-api-key`, `triage-checkpoint-db-url` and
+  `triage-browser-state-secret`, public (`allUsers`). The script ran end to
+  end on the first try from a Windows checkout once the `.sh` line endings
+  were LF; `.gitattributes` now forces LF for `*.sh`.
+
+**Rate limits on the deployed image** (`deploy/ratelimit_check.py`, against
+a tagged no-traffic revision `triage-ai-00005` with `RATE_LIMIT_SESSION=2/600`
+and `RATE_LIMIT_IP=3/3600`; the public revision kept the defaults): **7/7
+checks passed.**
+
+| Check | Result |
+|---|---|
+| 2001-character message | refused ("Message too long") |
+| conversation messages 1 and 2 | processed |
+| conversation message 3 | refused: "allows 2 messages per 10 minutes for this conversation" |
+| a new conversation from the same IP (IP message 3) | processed |
+| another new conversation (IP message 4) | refused: "allows 3 messages per hour for your network address" |
+| new conversation sending a fake `X-Forwarded-For: 203.0.113.19` | still refused |
+
+**Which `X-Forwarded-For` entry is the client.** A throwaway private
+service (this project's image running a 5-line header echo, deleted
+afterwards) showed that Cloud Run **appends the real client IP as the last
+entry** after anything the client sends: no client header → `[client]`;
+client sends two values → `[fake, fake, client]`. The last entry equalled
+`httpRequest.remoteIp` in Cloud Run's request log both times. So
+`RATE_LIMIT_XFF_INDEX=-1` (default) keys on the real client and cannot be
+spoofed. (No IP address is recorded here.)
+
+**Limitations:** limits are per instance, held in memory. With max 2
+instances, a client whose requests land on both instances can get up to
+twice the limit; session affinity normally keeps a browser on one instance.
+A restart resets the counters. Clients behind one NAT share the IP limit.
