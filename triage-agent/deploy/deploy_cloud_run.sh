@@ -16,6 +16,11 @@
 #                                 (non-pooled) connection string
 #   triage-browser-state-secret   fixed key for Gradio BrowserState (created
 #                                 here if missing, 64 hex characters)
+#   triage-trace-api-key          eval platform project API key (evp_live_...):
+#                                 when it exists, tracing is on and every turn
+#                                 is sent to TRACE_API_URL/api/v1/traces
+#
+# Tracing: TRACE_API_URL (default https://eval-web-827630707333.us-central1.run.app)
 #
 # Optional:
 #   SERVICE=triage-ai  MAX_INSTANCES=2  MIN_INSTANCES=0  MEMORY=2Gi
@@ -90,6 +95,15 @@ if secret_exists triage-checkpoint-db-url; then
 else
   echo "==> No triage-checkpoint-db-url: sessions in memory, so max 1 instance"
   MAX_INSTANCES=1
+fi
+
+if secret_exists triage-trace-api-key; then
+  TRACE_API_URL="${TRACE_API_URL:-https://eval-web-827630707333.us-central1.run.app}"
+  echo "==> Tracing on: ${TRACE_API_URL}/api/v1/traces (key: secret triage-trace-api-key)"
+  ENV_VARS+=",TRACE_API_URL=${TRACE_API_URL}"
+  SECRETS+=("TRACE_API_KEY=triage-trace-api-key:latest")
+else
+  echo "==> No triage-trace-api-key secret: tracing off"
 fi
 
 for s in ${SECRETS[@]+"${SECRETS[@]}"}; do

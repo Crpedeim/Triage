@@ -169,6 +169,17 @@ def test_no_cost_is_sent(platform):
         assert not [k for k in keys(req["json"]) if "cost" in k.lower()]
 
 
+def test_key_with_trailing_newline_is_stripped(monkeypatch):
+    monkeypatch.setenv("TRACE_API_URL", "http://x")
+    monkeypatch.setenv("TRACE_API_KEY", "evp_live_abc\r\n")
+    tracing.reset_tracer()
+    assert tracing.get_tracer().api_key == "evp_live_abc"
+    monkeypatch.setenv("TRACE_API_KEY", "  \n")
+    tracing.reset_tracer()
+    assert tracing.get_tracer().enabled is False
+    tracing.reset_tracer()
+
+
 def test_disabled_without_env(monkeypatch):
     monkeypatch.delenv("TRACE_API_URL", raising=False)
     monkeypatch.delenv("TRACE_API_KEY", raising=False)

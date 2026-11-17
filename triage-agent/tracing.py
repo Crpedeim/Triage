@@ -318,7 +318,8 @@ class Tracer:
     def __init__(self, base_url: str | None, api_key: str | None, timeout_s: float = 5.0,
                  max_queue: int = 1000, backoff_s: float = 0.5) -> None:
         self.base_url = (base_url or "").rstrip("/")
-        self.api_key = api_key
+        # A key pasted into Secret Manager can end in a CR/LF; that would make the header invalid.
+        self.api_key = (api_key or "").strip() or None
         self.timeout_s = timeout_s
         self.backoff_s = backoff_s
         self.enabled = bool(self.base_url and self.api_key)
