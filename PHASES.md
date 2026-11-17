@@ -1136,3 +1136,38 @@ RESUME_FACTS (chest pain, stroke).
   - Triage LLM span median: 12,408 ms.
   - Cost per triage: median $0.047302 ($0.035641–$0.054965).
   - Judges: safety 3/3, grounding 3/3, level 3/3.
+
+## R3 Phase 4: wrap-up
+
+- **Redeploy with tracing on** (done during Phase 3, needed for the live
+  cases):
+  - Revision `triage-ai-00006-bgc` runs image `triage-ai:ff3f310` (digest
+    `sha256:0d9407ca…`) and serves 100% of traffic.
+  - It has `TRACE_API_URL` set and `TRACE_API_KEY` from secret
+    `triage-trace-api-key`. The secret is version 1, enabled.
+  - It delivered 8/8 production traces (R3 Phase 3).
+  - Everything committed after `ff3f310` is docs, eval scripts and the deploy
+    script's traffic step; none of it changes the code that runs in the
+    container.
+- **Cold start:** the first live attempt hit a scaled-to-zero instance.
+  Cloud Run's logs give "Starting new instance" at 16:55:06.511 and "STARTUP
+  TCP probe succeeded" at 16:56:29.894: **83.38 s**, against 49.40 s in R2
+  Phase 5.
+- **Screenshots** in `docs/`, from the platform UI in the browser pane
+  (signed in by the user), light theme, 1280×1000 viewport:
+  - `eval-platform-trace-span-tree.jpg`: the production `triage.final` trace
+    of live case A, 27,213 ms, $0.034546.
+  - `eval-platform-trace-judges.jpg`: the three evaluators on that trace.
+  - `eval-platform-dashboard.jpg`: the project dashboard. It shows 103 traces
+    and $1.71, which matches the stored data (95 + 8 traces;
+    $1.569942 + $0.137908).
+  The README has a new "Tracing and evaluation on the live eval platform"
+  section with them.
+- **Docs updated:**
+  - `RESUME_FACTS.md`: new §4.9 before/after for Round 3, §5 deployment and
+    platform, limitations 4, 6 and 7.
+  - `deploy/CLOUD_RUN.md`: tracing, the traffic step, the cold-start range.
+- **Tests** (Windows laptop, no Postgres, `EVAL_PLATFORM_REPO` set):
+  **278 passed, 4 skipped, 0 failed**.
+- **Merge:** `claude/who-guidelines-hardening` (Round 2 + Round 3)
+  fast-forwarded into `main` and pushed.

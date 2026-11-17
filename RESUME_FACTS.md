@@ -1,8 +1,9 @@
 # RESUME_FACTS — TriageAI (`triage-agent/`)
 
 Only facts verified from the code or from commands that were run (2026-11-16 to
-2026-11-17; Phases 0–7 on Python 3.13.18 in a 4-CPU Linux container; Round 2
-on a Windows laptop with Python 3.14.0 and on Google Cloud Run). Every number traces to a
+2026-11-17; Phases 0–7 on Python 3.13.18 in a 4-CPU Linux container; Rounds 2
+and 3 on a Windows laptop with Python 3.14.0, on Google Cloud Run and on the
+live eval platform). Every number traces to a
 committed result file under `triage-agent/eval/results/` or to an entry in
 [`PHASES.md`](PHASES.md), which records how each was measured. Anything not
 measured says **NOT MEASURED**.
@@ -90,8 +91,11 @@ graph run** on the session's checkpointed state.
   treatment, `find_tables` rows, quality gate).
 - **UI:** Gradio 5.50.0, with the session id held in the browser
   (`gr.BrowserState`).
-- **Tracing:** one trace per turn, `POST /api/v1/traces`, with spans per
-  agent and per LLM call (stdlib HTTP, background sender).
+- **Tracing:** connected to the live LLM eval platform
+  (https://eval-web-827630707333.us-central1.run.app). One trace per user turn
+  in the platform's documented `POST /api/v1/traces` format: a span tree of
+  turn → agent → LLM call, with model, tokens, latency and status. Cost is
+  computed by the platform. Sent by a stdlib-HTTP background sender.
 - **Container:** `python:3.13-slim` with CPU torch 2.15.0.
 - **Deployment:** **live on Cloud Run** (§5): max 2 instances, session
   affinity, scale to zero, sessions in Neon Postgres, per-session / per-IP
@@ -226,7 +230,7 @@ hypertension cases F and W flip between standard and urgent across runs.
 | Failed triage LLM call → result | STANDARD, safety floor skipped | at least URGENT; floor applied (danger signs → EMERGENCY) |
 | Image build on Cloud Build | fails ("--mount option requires BuildKit") | builds (`deploy/cloudbuild.yaml`) |
 | Cloud Run cold start (start → startup probe), 3 deploys each | 47.68 s median (35.50–52.17) | 45.36 s median (36.28–50.31); no measurable difference |
-| Cold start on the live public URL after scale to zero | NOT MEASURED (not deployed) | 50.35 s first request; 49.40 s instance start → probe |
+| Cold start on the live public URL after scale to zero | NOT MEASURED (not deployed) | 50.35 s first request; 49.40 s instance start → probe (R3: once 84.38 s / 83.38 s) |
 | Live per-turn latency (8 turns, 3 cases) | NOT MEASURED | median 12.97 s (4.97–28.32 s) |
 | Live cases | NOT MEASURED | 3/3 correct (A EMERGENCY, B URGENT, C SELF CARE) |
 | Session survives scale to zero | NOT MEASURED on Cloud Run | yes: 4/4 messages restored on a new instance, conversation completed |
@@ -235,11 +239,32 @@ hypertension cases F and W flip between standard and urgent across runs.
 | Rate limits | none | 7/7 live checks passed, including a spoofed `X-Forwarded-For` |
 | Tests | 228 passed, 4 skipped without Postgres (Phase 7, Linux container) | 262 passed, 4 skipped, 1 failed on the Windows laptop without Postgres (the failure, a `test_tracing` platform-down test, also fails on untouched `main` there); `test_postgres_checkpoint.py` against Neon: 5 passed |
 
+### 4.9 Round 3: tracing to the live eval platform
+"Before" is Round 2; "after" is Round 3 (`PHASES.md`, R3 Phases 1–3).
+
+| Metric | Before | After |
+|---|---|---|
+| Trace payload | assumed field names, never sent to a real platform | the platform's documented contract. A test parses `TRACING_API.md` and checks its examples, its 422 error text and every response code; the platform's own zod schema accepts the payloads |
+| Traces delivered (31-case run) | NOT MEASURED | **95 sent, 95 stored**, same trace ids; 0 failed, dropped or retried; 765 spans |
+| Production traces (3 live cases) | none | **8 turns → 8 traces** (3 final), 61 spans |
+| **Total cost per triage** (all turns, both models; computed by the platform) | **NOT MEASURED** | **median $0.042758**, p95 $0.100079, range $0.033199–$0.150813 (31 cases); live: median $0.047302 (3 cases) |
+| Split by model, median per triage | — | `gemini-3.1-pro-preview` $0.023510, `gemini-3.8-flash` $0.017507 |
+| Platform judges' own cost per triage | — | median $0.010870 (separate from the above) |
+| Accuracy / under-triage / over-triage (31 cases) | 30/31 / 0/31 / 1/31 (X) | 30/31 / **0/31** / 1/31 (X) |
+| Latency per triage, median / p95 | 43.74 s / 71.24 s | 45.99 s / 89.58 s |
+| Per-agent latency, median (platform spans) | NOT MEASURED | intake 10.65 s · triage (pro) 11.97 s · relevance judge 4.99 s · retrieval 38 ms, or 9.15 s when it rewrites queries (7 of 40) · supervisor 0 ms |
+| Safety judge (LLM, on final turns) | — | **31/31 pass**; agrees with the suite's under-triage flag on 31/31, no disagreements. The run had no under-triage, so nothing tested whether it would catch one |
+| Grounding judge (actions supported by the cited text) | — | **21/31 pass**. Failures: Y, Z, U (0.0), X (0.33), N, P, V (0.5), AE, F, W (0.67): drugs, doses or referral timing that are not in the excerpts, and the PEN chest-pain and stroke gaps |
+| Triage-level format assertion | — | 31/31 |
+| Tests (Windows laptop, no Postgres) | 262 passed, 4 skipped, 1 failed | **278 passed, 4 skipped, 0 failed**, including the contract tests against `TRACING_API.md` and the platform's own zod schema; the Round 2 failure (a too-short wait in a tracing test) is fixed |
+
 ## 5. What is deployed where
 - **Live URL:** https://triage-ai-827630707333.us-central1.run.app
   - Cloud Run service `triage-ai`, project `gen-lang-client-0005933941`,
-    region `us-central1`, revision `triage-ai-00004-bg2`, image
-    `us-central1-docker.pkg.dev/gen-lang-client-0005933941/triage/triage-ai:f23f447`.
+    region `us-central1`, revision `triage-ai-00006-bgc` (100% of traffic),
+    image `us-central1-docker.pkg.dev/gen-lang-client-0005933941/triage/triage-ai:ff3f310`.
+  - **Tracing on:** `TRACE_API_URL` points at the eval platform;
+    `TRACE_API_KEY` comes from secret `triage-trace-api-key`.
   - Public (`allUsers`); max 2 instances, min 0; session affinity; 1 vCPU,
     2 GiB, CPU boost, 300 s timeout; runtime service account `triage-ai-run`.
   - LLM: Gemini through the OpenAI-compatible endpoint
@@ -256,13 +281,16 @@ hypertension cases F and W flip between standard and urgent across runs.
   `deploy/live_cases.py`.
 - **Not run against Google Cloud:** the Vertex AI code path (4 offline unit
   tests only).
-- **Not connected:** the tracing client has only been tested against a
-  local mock server, because the platform's URL and schema weren't
-  available. The payload field names are an assumed shape, documented in
-  `tracing.py`.
-- **Code:** `main` holds Phases 0–7; Round 2 is on branch
-  `claude/who-guidelines-hardening`, one or more commits per phase, with
-  measurements in `PHASES.md`.
+- **Eval platform:** project `TriageAI` (org `acme`, id
+  `cmwkx3qg60000b8mkzgvjofno`) on
+  https://eval-web-827630707333.us-central1.run.app. Three evaluators are
+  scoped to `triage.final` traces: `triage-safety-judge`,
+  `triage-grounding-judge` (LLM judges, `gemini-3.8-flash`, threshold 0.7)
+  and `triage-level-valid` (regex assertion). The seed script is
+  `triage-agent/deploy/eval-platform/add-triage-evaluators.ts`.
+- **Code:** `main` holds Phases 0–7, Round 2 and Round 3, merged from branch
+  `claude/who-guidelines-hardening` (one or more commits per phase,
+  measurements in `PHASES.md`).
 
 ## 6. Remaining limitations
 1. **The evaluation is self-written and small** (31 vignettes, one run per
@@ -280,12 +308,19 @@ hypertension cases F and W flip between standard and urgent across runs.
    return them. Both IMCI documents are "all rights reserved": they are not
    in the repo, and the deployed image holds text derived from them for this
    non-commercial prototype. The handbook is from 2005.
-4. **Total cost per triage is unknown** (no `gemini-3.8-flash` price), and
-   the pro price is from search results, not the pricing page itself.
+4. **Cost is the platform's computation.** Total cost per triage is now
+   measured (§4.9). It comes from the price table in the eval platform's
+   `src/lib/pricing.ts`, which its docs say was checked against Google's
+   pricing page on 2026-11-17; that page was not re-checked here. The flash
+   price doubles on 2027-01-01 in that table, and the figures here use
+   today's rates.
 5. **Claude, the code's default provider, is NOT MEASURED.** Neither is
    Vertex AI.
 6. **Deployment limits.**
-   - Cold start is about 50 s, mostly Python imports.
+   - Cold start: 49.40 s on the public URL in Round 2 (instance start →
+     startup probe). It was 83.38 s once in Round 3 (84.38 s to the first
+     page), measured from the same log lines. Round 2 traced most of the
+     startup time to Python imports.
    - Session affinity is required with 2 instances: without it a turn
      hung for the full 300 s timeout.
    - Rate limits live in memory per instance: a client spread over both
@@ -298,8 +333,17 @@ hypertension cases F and W flip between standard and urgent across runs.
    - No load test.
    - When the intake LLM call fails, the conversation produces no triage
      card.
-7. **Tracing payload shape is assumed** and unconnected to the real
-   platform.
+7. **Tracing and the platform judges.**
+   - The safety judge has not been tested on a real under-triage: the run
+     had none. A test with deliberately lowered levels was not run,
+     because it would put fake traces in the production project.
+   - The judges see only the final trace's input (conversation + guideline
+     excerpts) and output (card).
+   - Traces carry the conversation text to the platform.
+   - The judges use the same Gemini key as TriageAI.
+   - Production delivery was 8/8 traces with no load test; Cloud Run
+     throttles CPU outside requests, and the background sender has not been
+     measured under load.
 8. **The safety floor depends on extraction.** The rules are
    deterministic, but whether a finding is "present" is still read from the
    conversation by the LLM. The low-confidence loop-back path was fixed

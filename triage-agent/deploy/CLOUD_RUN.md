@@ -30,11 +30,21 @@
 - **Rate limits** (`ratelimit.py`): 20 messages / 10 min per conversation,
   60 / hour per client IP, 2000 characters per message (env
   `RATE_LIMIT_SESSION`, `RATE_LIMIT_IP`, `MAX_MESSAGE_CHARS`).
+- **Tracing** (`tracing.py`), on when secret `triage-trace-api-key` exists.
+  - The script sets `TRACE_API_URL` (default: the eval platform,
+    https://eval-web-827630707333.us-central1.run.app) and maps the secret to
+    `TRACE_API_KEY`.
+  - Each user turn becomes one `POST /api/v1/traces`, sent by a background
+    thread. A SIGTERM handler sends anything still queued when Cloud Run
+    stops an instance.
+  - Evaluators for the platform:
+    `deploy/eval-platform/add-triage-evaluators.ts`.
 
 ## Prerequisites
 - `gcloud` authenticated with Owner (or equivalent) on a project with billing
 - Secrets: `gemini-api-key`; for persistent sessions `triage-checkpoint-db-url`
-  (the script creates `triage-browser-state-secret` if missing)
+  (the script creates `triage-browser-state-secret` if missing); for tracing
+  `triage-trace-api-key` (an eval platform project API key)
 - A local Python (only the standard library is used) to fetch the WHO PDFs:
   iris.who.int answers Cloud Build with HTTP 403, so the PDFs are fetched
   locally (sha256-checked) and sent in the private build upload
@@ -49,13 +59,18 @@ Idempotent. It enables the APIs, creates the Artifact Registry repo `triage`
 and the runtime service account `triage-ai-run`, grants it the secrets it
 uses, fetches the PDFs, builds with `deploy/cloudbuild.yaml` (BuildKit is
 required by the Dockerfile) and deploys.
+- **Traffic:** it then routes 100% of traffic to the new revision and prints
+  which revision serves.
+- **Why:** in R3 the service's traffic was still pinned to an older revision
+  from the Round 2 tagged-revision tests. The deploy created the new revision
+  but sent it no traffic.
 
 ## Service settings the script uses, and why
 | Flag | Value | Reason |
 |---|---|---|
 | `--max-instances` | 2 (1 without a database) | caps cost on a public URL; sessions are in Postgres, so 2 instances share them |
 | `--session-affinity` | on | **required** with more than one instance: Gradio's job queue is in-process, and a turn whose result stream reached the other instance hung until the 300 s timeout (R2 Phase 3) |
-| `--min-instances` | 0 | scale to zero; a cold start costs about 35–52 s (R2 Phase 1) |
+| `--min-instances` | 0 | scale to zero; a cold start took 35–52 s in R2 Phase 1 and 83.38 s once in R3 (instance start → startup probe) |
 | `--cpu-boost` | on | startup is dominated by Python imports |
 | `--timeout` | 300 s | the slowest whole case in the R2 eval took 92.7 s over 2 turns |
 | `--memory` / `--cpu` | 2Gi / 1 | measured 497.2 MiB after one triage locally (Phase 6) |

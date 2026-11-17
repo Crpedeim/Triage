@@ -113,18 +113,69 @@ safety suite, **not a clinical benchmark** (see `triage-agent/eval/README.md`).
 Headline numbers, before the hardening work and after it (full history in
 [`PHASES.md`](PHASES.md)):
 
-| 31 cases, Gemini (`gemini-3.1-pro-preview` triage, `gemini-3.8-flash` other agents) | Before (Phase 1 code) | Phase 7 (8 curated chunks) | Round 2 (874 WHO chunks) |
-|---|---|---|---|
-| Under-triage (the safety metric) | 10/31 | **0/31** | **0/31** |
-| Accuracy (exact level) | 18/31 | 29/31 | **30/31** |
-| Latency per triage, median / p95 (all turns, simulated caregiver excluded) | 63.65 s / 81.79 s | 39.92 s / 49.08 s | 43.74 s / 71.24 s |
+| 31 cases, Gemini (`gemini-3.1-pro-preview` triage, `gemini-3.8-flash` other agents) | Before (Phase 1 code) | Phase 7 (8 curated chunks) | Round 2 (874 WHO chunks) | Round 3 (same, traced) |
+|---|---|---|---|---|
+| Under-triage (the safety metric) | 10/31 | **0/31** | **0/31** | **0/31** |
+| Accuracy (exact level) | 18/31 | 29/31 | **30/31** | **30/31** |
+| Latency per triage, median / p95 (all turns, simulated caregiver excluded) | 63.65 s / 81.79 s | 39.92 s / 49.08 s | 43.74 s / 71.24 s | 45.99 s / 89.58 s |
+| Total cost per triage, median (platform-computed) | not measured | not measured | not measured | **$0.0428** (p95 $0.1001) |
 
 The default Claude configuration has not been evaluated.
 
 **Live demo:** https://triage-ai-827630707333.us-central1.run.app (Cloud Run,
-scales to zero, so the first request after idle takes about 50 s; rate
-limited). Three cases run through it gave the expected EMERGENCY, URGENT and
-SELF CARE (`PHASES.md`, R2 Phase 5).
+scales to zero, so the first request after idle can take 50–85 s (49.40 s and
+84.38 s measured); rate limited). Three cases run through it gave the
+expected EMERGENCY, URGENT and SELF CARE (`PHASES.md`, R2 Phase 5 and R3
+Phase 3).
+
+---
+
+## Tracing and evaluation on the live eval platform
+
+Every user turn, in the eval run and in production, is sent as one trace to an
+LLM eval platform (https://eval-web-827630707333.us-central1.run.app, project
+`TriageAI`). The format is the platform's documented `POST /api/v1/traces`
+contract, and a contract test checks it (`triage-agent/tracing.py`,
+`triage-agent/tests/test_tracing_contract.py`).
+- **Span tree:** each trace holds the turn → each agent → each LLM call, with
+  model, tokens (reasoning included), latency and status.
+- **Cost:** the platform computes it from the model and tokens.
+- **Final turn:** the turn that produces the card is named `triage.final`. Its
+  input is the conversation plus the guideline text the triage agent was
+  given, and its output is the card. Three evaluators run on it:
+  - an LLM **safety judge**: does the level reflect every danger sign the user
+    reported?
+  - an LLM **grounding judge**: are the recommended actions supported by the
+    cited text?
+  - a regex check that the card states a valid level.
+
+![A TriageAI trace on the eval platform: turn, agents and LLM calls](docs/eval-platform-trace-span-tree.jpg)
+
+*A production trace (case A, live URL): the final turn's span tree, 27.2 s and
+$0.0345.*
+
+![The platform's judges on that trace](docs/eval-platform-trace-judges.jpg)
+
+*The three evaluators on the same trace, with the judges' reasoning.*
+
+![The TriageAI project dashboard](docs/eval-platform-dashboard.jpg)
+
+*Project dashboard after the traced 31-case run and 3 production cases (103
+traces, $1.71).*
+
+Measured in R3 Phase 3 (`PHASES.md`):
+- **Delivery:** 95/95 traces from the 31-case run, and 8/8 from 3 production
+  conversations.
+- **Total cost per triage:** median **$0.0428** (p95 $0.1001), of which
+  `gemini-3.1-pro` $0.0235 and `gemini-3.8-flash` $0.0175.
+- **Per-agent latency** (medians): intake 10.6 s, triage 12.0 s, relevance
+  judge 5.0 s.
+- **Safety judge:** 31/31 pass, agreeing with the suite's under-triage results
+  on every case. The run had no under-triage, so whether it would catch one
+  is untested.
+- **Grounding judge:** 21/31 pass. It flags drugs, doses and referral times
+  that are not in the excerpts, and the missing WHO PEN chest-pain and stroke
+  guidance.
 
 ---
 
@@ -136,15 +187,15 @@ triage-agent/
   safety.py      danger-sign checklist, red flags, rule-based triage floor
   graph.py       StateGraph wiring, parallel fan-out, run_turn()
   checkpointing.py  PostgresSaver / in-memory, state-type allowlist
-  tracing.py     per-turn traces with per-agent spans → POST /api/v1/traces
+  tracing.py     per-turn traces (span tree turn → agent → LLM call) → eval platform POST /api/v1/traces
   pricing.py     model prices (unknown price → unknown cost, never $0)
   llm.py         providers: anthropic (default), openai(-compatible), groq, together, ollama, vertexai
   rag/           fetch_guidelines · pdf_extract (table-aware) · build_kb · embeddings · Chroma store
   rag/guidelines/sources.json   WHO documents: URLs, sha256, licences, page roles
   prompts/       per-agent prompts
   app.py         Gradio UI
-  eval/          cases.json (31), run_eval.py, compare.py, profile.py, results/
-  deploy/        deploy_cloud_run.sh, CLOUD_RUN.md
+  eval/          cases.json (31), run_eval.py, platform_report.py, compare.py, profile.py, results/
+  deploy/        deploy_cloud_run.sh, CLOUD_RUN.md, live_cases.py, eval-platform/ (evaluator seed script)
   Dockerfile
   tests/         pytest suite
 PHASES.md        per-phase changes and measurements
@@ -204,4 +255,5 @@ of WHO IMCI; the documents used here are the WHO IMCI originals.
 LangGraph · LangChain · Pydantic · ChromaDB + sentence-transformers
 (all-MiniLM-L6-v2) · Gradio 5 · PostgreSQL (langgraph-checkpoint-postgres) ·
 Gemini (OpenAI-compatible endpoint / Vertex AI) · Docker / Cloud Run ·
+tracing to an LLM eval platform (LLM-as-judge evaluators) ·
 optional Google ADK · pytest.
