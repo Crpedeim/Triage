@@ -254,7 +254,7 @@ hypertension cases F and W flip between standard and urgent across runs.
 | Latency per triage, median / p95 | 43.74 s / 71.24 s | 45.99 s / 89.58 s |
 | Per-agent latency, median (platform spans) | NOT MEASURED | intake 10.65 s · triage (pro) 11.97 s · relevance judge 4.99 s · retrieval 38 ms, or 9.15 s when it rewrites queries (7 of 40) · supervisor 0 ms |
 | Safety judge (LLM, on final turns) | — | **31/31 pass**; agrees with the suite's under-triage flag on 31/31, no disagreements (the run had no under-triage) |
-| Safety judge, negative control (24 final traces re-sent with the level one step below expected) | — | **caught 17/20** real under-triages (emergency → urgent 12/15, urgent → standard 5/5); missed A and K (chest indrawing: the rubric doesn't map IMCI's "urgent referral" to EMERGENCY) and V (no BP reading); passed 4/4 standard → self_care, which the rubric doesn't cover |
+| Safety judge, negative control (24 final traces re-sent with the level one step below expected) | — | first rubric: **caught 17/20** (missed A, K, V: no mapping of IMCI's "urgent referral" to EMERGENCY). **Fixed rubric** (maps guideline wording onto the app's levels; the more severe edition wins): **caught 20/20**, and passed **31/31** original cards re-sent unchanged (no false alarms); 4/4 standard → self_care passed (outside the rubric's scope). One run each |
 | Grounding judge (actions supported by the cited text) | — | **21/31 pass**. Failures: Y, Z, U (0.0), X (0.33), N, P, V (0.5), AE, F, W (0.67): drugs, doses or referral timing that are not in the excerpts, and the PEN chest-pain and stroke gaps |
 | Triage-level format assertion | — | 31/31 |
 | Tests (Windows laptop, no Postgres) | 262 passed, 4 skipped, 1 failed | **278 passed, 4 skipped, 0 failed**, including the contract tests against `TRACING_API.md` and the platform's own zod schema; the Round 2 failure (a too-short wait in a tracing test) is fixed |
@@ -335,12 +335,18 @@ hypertension cases F and W flip between standard and urgent across runs.
    - When the intake LLM call fails, the conversation produces no triage
      card.
 7. **Tracing and the platform judges.**
-   - The safety judge caught 17/20 deliberately lowered levels. It missed
-     chest indrawing twice: its rubric leaves that call to the guideline text,
-     where IMCI's "urgent referral" means TriageAI's EMERGENCY. It also
-     missed one adult case with no BP reading. Its rubric ignores under-triage
-     that involves no danger sign (standard → self_care). The 24 control
-     traces stay in the production project, tagged `negativeControl: true`.
+   - **Safety judge limits.** With the fixed rubric it caught 20/20
+     deliberately lowered levels, with no false alarm on 31 unchanged
+     cards. Caveats:
+     - The lowered cards keep actions written for the higher level, which
+       makes them easier to catch than a real, self-consistent under-triage.
+     - "The more severe edition wins" decides chest indrawing (2005 handbook
+       vs 2014 booklet) the same way the suite does.
+     - The rubric ignores under-triage that involves no danger sign
+       (standard → self_care).
+     - One run each, so judge variation is not measured.
+     - The control traces stay in the production project, tagged
+       `negativeControl` / `positiveControl`.
    - The judges see only the final trace's input (conversation + guideline
      excerpts) and output (card).
    - Traces carry the conversation text to the platform.

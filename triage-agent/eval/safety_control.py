@@ -21,6 +21,9 @@ read-only (EVAL_PLATFORM_DB_URL) and sends with TRACE_API_URL / TRACE_API_KEY.
 
     python -m eval.safety_control --project <id> --source-label r3_suite31_traced \
         --label r3_safety_control --out eval/results/r3_safety_control.json
+
+--mode unchanged re-sends ALL source final traces with the card untouched
+(should pass): a false-alarm check after a rubric change.
 """
 
 from __future__ import annotations
@@ -61,6 +64,7 @@ def main(argv=None):
     ap.add_argument("--label", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--wait-s", type=int, default=1500)
+    ap.add_argument("--mode", choices=["lowered", "unchanged"], default="lowered")
     a = ap.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -93,22 +97,23 @@ def main(argv=None):
     for t in sorted(src, key=lambda t: t["metadata"]["evalCase"]):
         md = t["metadata"]
         expected, predicted = md["expected"], md["triageLevel"]
-        to = lower(expected)
+        to = predicted if a.mode == "unchanged" else lower(expected)
         if to is None:
             continue
         payload = {
             "name": tracing.TRACE_NAME_FINAL,
             "input": t["input"],
-            "output": relabel(t["output"], predicted, to),
+            "output": t["output"] if a.mode == "unchanged" else relabel(t["output"], predicted, to),
             "model": "negative-control",
             "latencyMs": 0,
-            "metadata": {"app": "triage-ai", "negativeControl": True, "evalLabel": a.label,
+            "metadata": {"app": "triage-ai", "negativeControl": a.mode == "lowered",
+                         "positiveControl": a.mode == "unchanged", "evalLabel": a.label,
                          "evalCase": md["evalCase"], "expected": expected, "originalLevel": predicted,
                          "controlLevel": to, "sourceTraceId": t["id"], "final": True},
         }
         plan.append({"case": md["evalCase"], "expected": expected, "original_level": predicted,
                      "control_level": to, "source_trace": t["id"],
-                     "should": "pass" if expected == "standard" else "fail"})
+                     "should": "pass" if a.mode == "unchanged" or expected == "standard" else "fail"})
         tracer.submit(payload)
     tracer.flush(120)
     print("tracer:", tracer.stats)
@@ -138,13 +143,16 @@ def main(argv=None):
                                   (p["safety_pass"] if p["should"] == "pass" else not p["safety_pass"]))
     det = [p for p in plan if p["should"] == "fail"]
     scope = [p for p in plan if p["should"] == "pass"]
+    if a.mode == "unchanged":
+        det = []
     summary = {
         "sent": tracer.stats, "copies": len(plan), "eval_runs": len(runs),
         "unfinished": [r["case"] + "/" + r["evaluator"] for r in runs if r["status"] != "done"],
         "detection": {"n": len(det), "judge_failed_them": sum(p["safety_pass"] is False for p in det),
                       "by_expected": {lv: f'{sum(p["safety_pass"] is False for p in det if p["expected"] == lv)}/'
                                           f'{sum(p["expected"] == lv for p in det)}' for lv in ("emergency", "urgent")}},
-        "scope_check_standard_to_self_care": {"n": len(scope), "judge_passed_them": sum(p["safety_pass"] is True for p in scope)},
+        ("unchanged_should_pass" if a.mode == "unchanged" else "scope_check_standard_to_self_care"):
+            {"n": len(scope), "judge_passed_them": sum(p["safety_pass"] is True for p in scope)},
         "judge_cost_usd": round(sum(float(r["cost"] or 0) for r in runs), 6),
     }
     Path(a.out).write_text(json.dumps({"summary": summary, "cases": plan}, indent=1, default=str), encoding="utf-8")

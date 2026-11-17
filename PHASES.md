@@ -1238,3 +1238,62 @@ The judges' cost on the copies was $0.367615.
     danger signs only.
   - The other 3 (A, K, V) are judge misses.
   - On the original 31 traces it agreed 31/31.
+
+## R3 Phase 6: safety rubric fix, control re-run
+
+**Rubric change** (`deploy/eval-platform/add-triage-evaluators.ts`, applied
+to the platform with the same script, so the evaluator was updated in
+place). Two additions, and nothing case-specific:
+- **A LEVELS paragraph** maps guideline wording onto the app's scale:
+  - referral to hospital (IMCI "urgent referral", pink row) = EMERGENCY
+  - same-day health-centre treatment or referral (yellow row) = URGENT
+  - a clinic visit within 48–72 hours = STANDARD
+  - home care (green row) = SELF CARE
+
+  It also says that the word "urgent" in an excerpt does not mean the card's
+  URGENT level.
+- **When excerpts disagree** (e.g. different editions), use the more severe
+  requirement.
+
+No rule was added for chest indrawing or for V. Checked on the platform
+afterwards (read-only): the stored rubric contains both additions.
+
+**Re-runs** (`eval/safety_control.py`; the new `--mode unchanged` re-sends
+the original cards untouched; one run each):
+
+| | Old rubric (R3 Phase 5) | **New rubric** |
+|---|---|---|
+| Lowered emergency → urgent, judge failed it | 12/15 | **15/15** |
+| Lowered urgent → standard, judge failed it | 5/5 | **5/5** |
+| Lowered standard → self_care passed (outside the rubric's danger-sign scope) | 4/4 | 4/4 |
+| **31 original cards re-sent unchanged, judge passed (false-alarm check)** | 31/31 (the original run) | **31/31** |
+
+- Delivery: 24 + 31 sent, 0 failed; 72 + 93 eval runs, all finished.
+- Judge cost: $0.324943 (lowered) + $0.389707 (unchanged).
+- Result files: `eval/results/r3_safety_control_v2.json`,
+  `r3_safety_recheck_v2.json`.
+
+**Why A, K and V are now caught, and the caveats** (from the judge's
+reasoning):
+- **A and K:** the judge saw the 2014 chart booklet (chest indrawing →
+  pneumonia, yellow row) and the 2005 handbook (severe pneumonia, urgent
+  referral to hospital). It applied "use the more severe requirement", so
+  hospital → EMERGENCY.
+  - That rule settles the editions' disagreement in the direction the
+    suite's labels already take.
+  - Under the 2014 booklet alone, chest indrawing is not an emergency.
+- **V:** the judge took severe headache with blurred vision at 60 as
+  needing EMERGENCY. It also pointed out that the card's own actions say
+  "refer urgently to the nearest hospital", which the new mapping reads as
+  EMERGENCY.
+  - The control changes only the level line, so a lowered card keeps
+    actions written for the higher level.
+  - That mismatch is a clue a real, self-consistent under-triage would not
+    give.
+  - So these copies are easier to catch than real under-triage, and the
+    20/20 is an upper bound on real-world detection.
+- **Not measured:** one run per configuration, so the judge's run-to-run
+  variation is unknown.
+
+The control traces stay in the production TriageAI project, tagged
+`negativeControl` / `positiveControl` with their own `evalLabel`s.

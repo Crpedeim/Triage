@@ -172,10 +172,12 @@ Measured in R3 Phase 3 (`PHASES.md`):
   judge 5.0 s.
 - **Safety judge:** 31/31 pass, agreeing with the suite's under-triage results
   on every case.
-  - In a negative control (24 final traces re-sent with the level one step
-    below expected), it caught 17/20 real under-triages.
-  - It missed chest indrawing twice (its rubric doesn't map IMCI's "urgent
-    referral" to EMERGENCY) and one adult case without a BP reading.
+  - **Negative control** (24 final traces re-sent with the level one step
+    below expected): the first rubric caught 17/20.
+  - **After the rubric fix** (guideline wording mapped onto the app's levels),
+    it caught 20/20 and raised no false alarm on the 31 unchanged cards.
+  - The lowered cards still carry actions for the higher level, so real
+    under-triage would be harder to catch.
 - **Grounding judge:** 21/31 pass. It flags drugs, doses and referral times
   that are not in the excerpts, and the missing WHO PEN chest-pain and stroke
   guidance.
