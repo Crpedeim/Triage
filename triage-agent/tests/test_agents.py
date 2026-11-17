@@ -28,6 +28,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from state import (
     COMPLETENESS_THRESHOLD,
+    DangerSign,
+    DangerSignFinding,
+    FindingStatus,
     CONFIDENCE_THRESHOLD,
     PatientSummary,
     Phase,
@@ -43,6 +46,12 @@ from state import (
 
 # ─── Shared mock data ────────────────────────────────────────────────────────
 
+def _findings(present=(), absent=()):
+    # Phase 2: summaries carry danger-sign checklist answers (safety.py)
+    return ([DangerSignFinding(sign=s, status=FindingStatus.PRESENT) for s in present]
+            + [DangerSignFinding(sign=s, status=FindingStatus.ABSENT) for s in absent])
+
+
 def make_pneumonia_summary(complete: bool = True) -> PatientSummary:
     return PatientSummary(
         age=3,
@@ -57,6 +66,9 @@ def make_pneumonia_summary(complete: bool = True) -> PatientSummary:
         ],
         vital_signs=VitalSigns(temperature_celsius=38.2, respiratory_rate=50),
         red_flags=["chest indrawing"],
+        danger_sign_findings=_findings(present=[DangerSign.CHEST_INDRAWING], absent=[
+            DangerSign.UNABLE_TO_DRINK_OR_BREASTFEED, DangerSign.VOMITS_EVERYTHING, DangerSign.CONVULSIONS,
+            DangerSign.LETHARGIC_OR_UNCONSCIOUS, DangerSign.STRIDOR_WHEN_CALM, DangerSign.STIFF_NECK]),
         completeness_score=0.85 if complete else 0.35,
     )
 
@@ -69,6 +81,9 @@ def make_mild_cough_summary() -> PatientSummary:
         symptoms=[Symptom(name="cough", duration="2 days", severity=Severity.MILD)],
         vital_signs=VitalSigns(respiratory_rate=30),
         red_flags=[],
+        danger_sign_findings=_findings(absent=[
+            DangerSign.UNABLE_TO_DRINK_OR_BREASTFEED, DangerSign.VOMITS_EVERYTHING, DangerSign.CONVULSIONS,
+            DangerSign.LETHARGIC_OR_UNCONSCIOUS, DangerSign.CHEST_INDRAWING, DangerSign.STRIDOR_WHEN_CALM]),
         completeness_score=0.8,
     )
 
@@ -506,7 +521,13 @@ class TestTriageAgent:
 
     @patch("agents.triage.get_llm")
     def test_scenario_1_high_confidence_urgent(self, mock_get_llm):
-        """Scenario 1: Severe pneumonia → URGENT, high confidence."""
+        """Scenario 1: Severe pneumonia (chest indrawing) → EMERGENCY, high confidence.
+
+        Phase 2 change: chest indrawing is an IMNCI pink classification ("SEVERE
+        PNEUMONIA OR VERY SEVERE DISEASE ... Refer URGENTLY to hospital"), so the
+        deterministic floor now escalates an LLM 'urgent' to 'emergency'
+        (previously the override stopped at URGENT).
+        """
         from agents.triage import triage_agent
 
         expected_result = make_triage_result(TriageLevel.URGENT, 0.92)
@@ -516,7 +537,8 @@ class TestTriageAgent:
         result = triage_agent(state)
 
         assert result["triage_result"] is not None
-        assert result["triage_result"].triage_level == TriageLevel.URGENT
+        assert result["triage_result"].triage_level == TriageLevel.EMERGENCY
+        assert "[SAFETY OVERRIDE]" in result["triage_result"].reasoning
         assert result["triage_confidence"] >= CONFIDENCE_THRESHOLD
 
     @patch("agents.triage.get_llm")
@@ -694,15 +716,18 @@ class TestConfidenceComputation:
         )
         summary = make_mild_cough_summary()
         confidence = _compute_confidence(result, summary)
-        assert confidence == 0.4
+        # Phase 2: 0.4 default, x1.0 (checklist fully answered), -0.10 (nothing cited)
+        assert confidence == 0.3
 
-    def test_red_flag_boosts_confidence(self):
+    def test_red_flag_does_not_boost_confidence(self):
+        """Phase 2: the old +0.15 red-flag boost saturated confidence at 1.0; red
+        flags now change the LEVEL (safety floor), not the confidence."""
         from agents.triage import _compute_confidence
 
         result = make_triage_result(TriageLevel.URGENT, 0.75)
         summary = make_pneumonia_summary()  # Has chest indrawing red flag
         confidence = _compute_confidence(result, summary)
-        assert confidence > 0.75  # Boosted by red flag presence
+        assert confidence == 0.75
 
     def test_low_completeness_penalizes_confidence(self):
         from agents.triage import _compute_confidence

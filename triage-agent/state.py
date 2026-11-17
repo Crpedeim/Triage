@@ -69,6 +69,45 @@ class Severity(str, Enum):
     UNKNOWN = "unknown"
 
 
+class DangerSign(str, Enum):
+    """
+    Items of the fixed danger-sign checklist (see safety.py for groups/rules).
+    Child items come from the IMNCI sample text in rag/ingest.py; adult items
+    from RED_FLAG_KEYWORDS and the WHO PEN hypertensive-crisis criteria.
+    """
+    # IMNCI general danger signs (child 2 months - 5 years)
+    UNABLE_TO_DRINK_OR_BREASTFEED = "unable_to_drink_or_breastfeed"
+    VOMITS_EVERYTHING = "vomits_everything"
+    CONVULSIONS = "convulsions"
+    LETHARGIC_OR_UNCONSCIOUS = "lethargic_or_unconscious"
+    # IMNCI cough / difficult breathing
+    CHEST_INDRAWING = "chest_indrawing"
+    STRIDOR_WHEN_CALM = "stridor_when_calm"
+    # IMNCI diarrhoea / dehydration
+    SUNKEN_EYES = "sunken_eyes"
+    SKIN_PINCH_VERY_SLOW = "skin_pinch_very_slow"
+    SKIN_PINCH_SLOW = "skin_pinch_slow"
+    DRINKING_POORLY = "drinking_poorly"
+    DRINKS_EAGERLY = "drinks_eagerly"
+    RESTLESS_IRRITABLE = "restless_irritable"
+    # IMNCI fever
+    STIFF_NECK = "stiff_neck"
+    # Adult danger signs
+    CHEST_PAIN = "chest_pain"
+    DIFFICULTY_BREATHING_AT_REST = "difficulty_breathing_at_rest"
+    SIGNS_OF_STROKE = "signs_of_stroke"
+    SEVERE_BLEEDING = "severe_bleeding"
+    CONFUSION_OR_UNCONSCIOUS = "confusion_or_unconscious"
+    SEIZURE = "seizure"
+    VISUAL_DISTURBANCE = "visual_disturbance"
+
+
+class FindingStatus(str, Enum):
+    PRESENT = "present"
+    ABSENT = "absent"
+    UNKNOWN = "unknown"
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA MODELS — Structured clinical data extracted by agents
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -103,6 +142,14 @@ class Symptom(BaseModel):
     associated_symptoms: list[str] = Field(
         default_factory=list,
         description="Other symptoms that accompany this one (e.g., cough + fast breathing)"
+    )
+
+
+class DangerSignFinding(BaseModel):
+    """Whether one checklist danger sign was reported present or absent."""
+    sign: DangerSign = Field(description="Checklist item")
+    status: FindingStatus = Field(
+        description="'present' or 'absent' ONLY if explicitly stated in the conversation; otherwise 'unknown'"
     )
 
 
@@ -199,6 +246,14 @@ class PatientSummary(BaseModel):
             "DANGER SIGNS detected. If ANY item is present here, triage level is "
             "automatically escalated. Examples: 'chest indrawing', 'unable to drink', "
             "'convulsions', 'severe dehydration', 'altered consciousness'"
+        )
+    )
+    danger_sign_findings: list[DangerSignFinding] = Field(
+        default_factory=list,
+        description=(
+            "Danger-sign checklist answers. Include an entry for every checklist sign the "
+            "conversation addresses, with status 'present' or 'absent'. Omit or use 'unknown' "
+            "for signs that were not asked about or that the caregiver did not know."
         )
     )
     completeness_score: float = Field(
@@ -351,6 +406,7 @@ class TriageState(TypedDict):
 
     # ─── Control Flow ───
     awaiting_user: bool                          # Intake asked a question; end this run and wait for the reply
+    checklist_asked: list[str]                   # Danger-sign checklist groups already asked (safety.py)
     current_agent: str                           # Which agent is active
     cycle_count: int                             # How many intake->triage cycles so far
     max_cycles: int                              # Hard limit on cycles (default: 3)
@@ -379,6 +435,7 @@ def create_initial_state() -> dict:
         "triage_confidence": 0.0,
         "follow_up_questions": [],
         "awaiting_user": False,
+        "checklist_asked": [],
         "current_agent": "intake",
         "cycle_count": 0,
         "max_cycles": 3,

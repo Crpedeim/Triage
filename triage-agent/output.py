@@ -92,6 +92,13 @@ def format_triage_card(state: TriageState) -> str:
             lines.append(f"  • {guideline}")
         lines.append("")
 
+    # ─── Danger-sign checklist gaps ──────────────────────
+    gaps = _unassessed(summary)
+    if gaps:
+        lines.append("DANGER SIGNS NOT ASSESSED (check before relying on this result):")
+        lines.append("  " + ", ".join(gaps))
+        lines.append("")
+
     # ─── Confidence ──────────────────────────────────────
     confidence_label = "High" if confidence >= 0.75 else "Moderate" if confidence >= 0.5 else "Low"
     lines.append(f"Assessment confidence: {confidence_label} ({confidence:.0%})")
@@ -156,6 +163,11 @@ def format_for_gradio(state: TriageState) -> str:
             lines.append(f"- {g}")
         lines.append("")
 
+    gaps = _unassessed(summary)
+    if gaps:
+        lines.append("**⚠️ Danger signs not assessed:** " + ", ".join(gaps))
+        lines.append("")
+
     confidence_label = "High" if confidence >= 0.75 else "Moderate" if confidence >= 0.5 else "Low"
     lines.append(f"---")
     lines.append(f"*Confidence: {confidence_label} ({confidence:.0%})*")
@@ -163,6 +175,13 @@ def format_for_gradio(state: TriageState) -> str:
         lines.append("*⚠️ Low confidence — consider medical officer review.*")
 
     return "\n".join(lines)
+
+
+def _unassessed(summary) -> list[str]:
+    if summary is None:
+        return []
+    import safety
+    return [i.replace("_", " ") for i in safety.unassessed_items(summary)]
 
 
 def format_agent_status(state: TriageState) -> str:

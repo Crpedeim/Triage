@@ -81,6 +81,20 @@ def triage_prompt(
         for i, doc in enumerate(guidelines[:8])  # Cap at 8 to stay within context
     ]) or "No guidelines retrieved."
 
+    # Deterministic checklist findings and rule-based floor (safety.py)
+    import safety
+    present = [f.sign.value for f in summary.danger_sign_findings if f.status.value == "present"]
+    absent = [f.sign.value for f in summary.danger_sign_findings if f.status.value == "absent"]
+    unassessed = safety.unassessed_items(summary)
+    floor, floor_reasons = safety.triage_floor(summary)
+    checklist_str = (
+        f"  Present: {', '.join(present) or 'none'}\n"
+        f"  Absent: {', '.join(absent) or 'none'}\n"
+        f"  Not assessed: {', '.join(unassessed) or 'none'}\n"
+        f"  Rule-based minimum level: {floor.value if floor else 'none'}"
+        + (f" ({'; '.join(floor_reasons)})" if floor_reasons else "")
+    )
+
     # Adjust confidence instruction based on cycle count
     if cycle_count == 0:
         confidence_guidance = "Set confidence >= 0.75 only if you have enough information to \
@@ -108,6 +122,9 @@ Vital Signs: {vitals_str}
 Red Flag Danger Signs:
 {red_flags_str}
 
+Danger-Sign Checklist (deterministic):
+{checklist_str}
+
 Medical History: {history_str}
 Current Medications: {meds_str}
 </patient_presentation>
@@ -126,7 +143,8 @@ Note any age-specific significance (e.g., respiratory rate thresholds differ by 
 
 STEP 2 — RED FLAG CHECK:
 Are any danger signs present in the red_flags list?
-CRITICAL RULE: If ANY red flag is present, the triage_level MUST be "urgent" or "emergency".
+CRITICAL RULE: If ANY red flag / danger sign is present, the triage_level MUST be "emergency".
+The rule-based minimum level in the checklist is enforced after your answer; never go below it.
 This overrides all other reasoning. State explicitly: "RED FLAG PRESENT: [name]"
 
 STEP 3 — GUIDELINE MATCHING:
@@ -140,8 +158,10 @@ For each: which symptoms support it, which symptoms argue against it.
 
 STEP 5 — TRIAGE CLASSIFICATION:
 Choose one level:
-  "emergency": Life-threatening. Immediate referral to hospital. Any general danger sign present.
+  "emergency": Life-threatening. Immediate referral to hospital. Any general danger sign present,
+            or any IMNCI pink classification (e.g. severe pneumonia, severe dehydration, very severe febrile disease).
   "urgent": Serious. Same-day referral. Severe classification but no immediate life threat.
+            Includes IMNCI yellow classifications, e.g. PNEUMONIA (fast breathing for age) and SOME DEHYDRATION.
   "standard": Needs medical attention. Health center visit within 48-72 hours.
   "self_care": Home management. Safe with follow-up advice. No danger signs present.
 
@@ -173,7 +193,7 @@ structured triage assessments for ASHA community health workers.
 
 CRITICAL SAFETY RULES:
 1. If ANY general danger sign is present (chest indrawing, unable to drink, convulsions, \
-lethargic/unconscious, stridor), classify as "urgent" or "emergency". This is NON-NEGOTIABLE.
+lethargic/unconscious, stridor), classify as "emergency". This is NON-NEGOTIABLE.
 2. For children under 5, use IMNCI age-specific thresholds (RR ≥40 for 1-5yr, ≥50 for 2-12mo, ≥60 for <2mo).
 3. When in doubt between triage levels, choose the MORE URGENT level. Err on the side of safety.
 4. Never recommend specific prescription medications. Say "appropriate antibiotic per protocol" \

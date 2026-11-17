@@ -35,6 +35,24 @@ RED FLAGS — if ANY are mentioned, add to red_flags list:
   severe dehydration, stridor when calm, severe malnutrition, chest pain,
   difficulty breathing at rest, signs of stroke, severe bleeding
 
+DANGER-SIGN CHECKLIST (danger_sign_findings):
+For each sign below that the conversation addresses, add {sign, status}:
+  status "present" — the caregiver/health worker said it IS present
+  status "absent"  — they said it is NOT present (e.g. "drinking normally" → unable_to_drink_or_breastfeed absent
+                     and drinking_poorly absent; "alert / playful" → lethargic_or_unconscious absent;
+                     "no fits" → convulsions absent; "chest does not pull in" → chest_indrawing absent)
+  status "unknown" — not asked, or they said they don't know / haven't noticed
+Never guess: if it was not discussed, leave it out or mark it unknown.
+Signs:
+  unable_to_drink_or_breastfeed, vomits_everything, convulsions, lethargic_or_unconscious,
+  chest_indrawing (lower chest wall goes IN when breathing in), stridor_when_calm (harsh noise breathing in while calm),
+  sunken_eyes, skin_pinch_very_slow (goes back very slowly, > 2 s), skin_pinch_slow (goes back slowly),
+  drinking_poorly, drinks_eagerly (thirsty), restless_irritable, stiff_neck,
+  chest_pain, difficulty_breathing_at_rest, signs_of_stroke (one-sided weakness/numbness, trouble speaking),
+  severe_bleeding, confusion_or_unconscious, seizure, visual_disturbance
+Record a counted breathing rate in vital_signs.respiratory_rate and any measured blood pressure in
+vital_signs.blood_pressure_systolic / blood_pressure_diastolic.
+
 LANGUAGE NOTE: The health worker may describe symptoms in simple or informal language.
 Map these to clinical terms:
   "breathing fast" → tachypnea

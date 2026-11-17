@@ -15,11 +15,19 @@ OUTPUTS TO STATE:
   triage_confidence     — float 0.0-1.0
   follow_up_questions   — list of specific questions if confidence < threshold
 
-RED FLAG OVERRIDE (SAFETY GUARDRAIL):
-  If PatientSummary.red_flags is non-empty, triage_level is forced to
-  "urgent" or "emergency" in post-processing, REGARDLESS of LLM output.
-  This is implemented as Python logic, not left to the LLM's judgment.
-  A clinical system must never under-triage a danger sign case.
+SAFETY FLOOR (deterministic, safety.triage_floor):
+  After the LLM call the final level is max(LLM level, rule-based floor).
+  Danger signs (IMNCI general danger signs, chest indrawing, stridor, severe
+  dehydration, stiff neck, adult RED_FLAG_KEYWORDS, hypertensive crisis) set
+  an EMERGENCY floor; fast breathing for age or some dehydration set URGENT.
+  This is Python, not the LLM's judgement, and it only ever escalates.
+
+CONFIDENCE (_compute_confidence):
+  Starts from the LLM's top-condition confidence and is reduced (never
+  boosted) for an ambiguous differential, unanswered checklist items, no
+  guideline citation, or low intake completeness. Capped at
+  CONFIDENCE_CAP (0.95): the earlier +0.15 red-flag / +0.05 citation
+  boosts pushed every real case to 1.0.
 
 STRUCTURED OUTPUT:
   The Triage Agent uses LLM structured output to produce a TriageResult
@@ -31,10 +39,13 @@ from __future__ import annotations
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+import safety
+
 from llm import get_llm
 from prompts.triage_prompt import TRIAGE_SYSTEM, triage_prompt
 from rag.store import Document
 from state import (
+    AMBIGUITY_GAP,
     CONFIDENCE_THRESHOLD,
     PatientSummary,
     SuspectedCondition,
@@ -42,6 +53,8 @@ from state import (
     TriageResult,
     TriageState,
 )
+
+CONFIDENCE_CAP = 0.95
 
 
 def triage_agent(state: TriageState) -> dict:
@@ -107,81 +120,71 @@ def triage_agent(state: TriageState) -> dict:
 
 # ─── Helper functions ────────────────────────────────────────────────────────
 
+LEVEL_ACTIONS = {
+    TriageLevel.EMERGENCY: "EMERGENCY: Refer to hospital IMMEDIATELY. Give pre-referral treatment per protocol.",
+    TriageLevel.URGENT: "URGENT: Refer to a health facility TODAY.",
+}
+
+
 def _apply_red_flag_override(result: TriageResult, summary: PatientSummary) -> TriageResult:
     """
     Post-processing safety guardrail.
 
-    If any red flag danger signs are present in the PatientSummary,
-    ensure triage_level is at least URGENT. This prevents the LLM from
-    accidentally under-triaging a dangerous case.
-
-    Returns a new TriageResult with the corrected triage_level.
+    final level = max(LLM level, safety.triage_floor(summary)). Danger signs
+    force EMERGENCY; fast breathing / some dehydration force at least URGENT.
+    Never downgrades. Returns a new TriageResult when it escalates.
     """
-    if not summary.has_red_flags:
+    floor, reasons = safety.triage_floor(summary)
+    if floor is None or safety.max_level(result.triage_level, floor) == result.triage_level:
         return result
 
-    # Danger signs present — must be urgent or emergency
-    if result.triage_level not in (TriageLevel.EMERGENCY, TriageLevel.URGENT):
-        # Build an escalated result
-        red_flags_str = ", ".join(summary.red_flags)
-        escalated_reasoning = (
-            f"[SAFETY OVERRIDE] Red flag danger signs present: {red_flags_str}. "
-            f"Triage level escalated to URGENT per IMNCI protocol. "
-            f"Original assessment: {result.reasoning}"
-        )
-
-        # Generate referral note if not already present
-        referral_note = result.referral_note or (
-            f"Patient presents with danger sign(s): {red_flags_str}. "
-            f"Requires urgent clinical assessment. "
-            f"Chief complaint: {summary.chief_complaint}."
-        )
-
-        return TriageResult(
-            triage_level=TriageLevel.URGENT,
-            suspected_conditions=result.suspected_conditions,
-            recommended_actions=[
-                f"URGENT: Refer to nearest health facility immediately (danger sign present: {red_flags_str})",
-                *result.recommended_actions,
-            ],
-            referral_note=referral_note,
-            reasoning=escalated_reasoning,
-            guidelines_cited=result.guidelines_cited,
-        )
-
-    return result
+    reason_str = "; ".join(reasons)
+    escalated_reasoning = (
+        f"[SAFETY OVERRIDE] {reason_str}. Triage level escalated from "
+        f"{result.triage_level.value.upper()} to {floor.value.upper()} by deterministic rule. "
+        f"Original assessment: {result.reasoning}"
+    )
+    referral_note = result.referral_note or (
+        f"Danger finding(s): {reason_str}. Chief complaint: {summary.chief_complaint}."
+    )
+    return TriageResult(
+        triage_level=floor,
+        suspected_conditions=result.suspected_conditions,
+        recommended_actions=[f"{LEVEL_ACTIONS[floor]} ({reason_str})", *result.recommended_actions],
+        referral_note=referral_note,
+        reasoning=escalated_reasoning,
+        guidelines_cited=result.guidelines_cited,
+    )
 
 
 def _compute_confidence(result: TriageResult, summary: PatientSummary) -> float:
     """
-    Compute overall confidence for this triage result.
+    Confidence that the classification is well supported by the evidence.
 
-    Logic:
-    - Start with the top suspected condition's confidence
-    - Boost if: red flags clearly present (high certainty of urgency)
-    - Penalize if: no suspected conditions, or completeness was low
-    - Cap at 1.0
-
-    This gives a scalar confidence that the Supervisor uses for routing.
+    p = top suspected-condition confidence (0.4 if the model gave none)
+      - ambiguity:  if the top two are within AMBIGUITY_GAP, subtract the shortfall
+      × coverage:   (0.6 + 0.4 × fraction of applicable checklist items answered)
+      - 0.10        if no guideline section was cited
+      - 0.20        if intake completeness < 0.4
+    clamped to [0.05, CONFIDENCE_CAP]. No boosts: red flags change the LEVEL
+    (via the safety floor), not how certain the reasoning is.
     """
-    if not result.suspected_conditions:
-        return 0.4  # Low confidence — couldn't identify conditions
+    conds = sorted(result.suspected_conditions, key=lambda c: c.confidence, reverse=True)
+    p = conds[0].confidence if conds else 0.4
 
-    top_confidence = max(c.confidence for c in result.suspected_conditions)
+    if len(conds) >= 2:
+        gap = conds[0].confidence - conds[1].confidence
+        if gap < AMBIGUITY_GAP:
+            p -= (AMBIGUITY_GAP - gap)
 
-    # Boost: red flags clearly identified → we're confident in the urgency
-    if summary.has_red_flags:
-        top_confidence = min(1.0, top_confidence + 0.15)
+    p *= 0.6 + 0.4 * safety.checklist_coverage(summary)
 
-    # Boost: if guidelines were cited, reasoning is grounded
-    if result.guidelines_cited:
-        top_confidence = min(1.0, top_confidence + 0.05)
-
-    # Penalty: very low patient summary completeness
+    if not result.guidelines_cited:
+        p -= 0.10
     if summary.completeness_score < 0.4:
-        top_confidence = max(0.1, top_confidence - 0.2)
+        p -= 0.20
 
-    return round(top_confidence, 3)
+    return round(min(CONFIDENCE_CAP, max(0.05, p)), 3)
 
 
 def _extract_follow_up_questions(
@@ -211,11 +214,10 @@ def _extract_follow_up_questions(
                 "Is it more than 40 breaths per minute?"
             )
 
-    if not summary.red_flags:
-        questions.append(
-            "Is the child able to drink or breastfeed? "
-            "Has the child had any convulsions?"
-        )
+    # Checklist items the caregiver could not answer the first time
+    for item in safety.unassessed_items(summary)[:2]:
+        if item != "respiratory_rate":
+            questions.append(f"Can you check again whether this is present: {item.replace('_', ' ')}?")
 
     if summary.age is None and summary.age_months is None:
         questions.insert(0, "What is the patient's age?")

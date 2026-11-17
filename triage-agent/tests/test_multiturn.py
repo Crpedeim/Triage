@@ -26,6 +26,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from rag.store import Document  # noqa: E402
 from state import (  # noqa: E402
+    DangerSign,
+    DangerSignFinding,
+    FindingStatus,
     PatientSummary,
     SuspectedCondition,
     Symptom,
@@ -43,10 +46,18 @@ DOC = Document(
 )
 
 
+# Phase 2: a 3-year-old with cough needs the general-danger and breathing
+# checklist groups answered before intake may complete (safety.py).
+CHECKLIST_ALL_ABSENT = [DangerSignFinding(sign=s, status=FindingStatus.ABSENT) for s in (
+    DangerSign.UNABLE_TO_DRINK_OR_BREASTFEED, DangerSign.VOMITS_EVERYTHING, DangerSign.CONVULSIONS,
+    DangerSign.LETHARGIC_OR_UNCONSCIOUS, DangerSign.CHEST_INDRAWING, DangerSign.STRIDOR_WHEN_CALM)]
+
+
 def summary(completeness: float, **kw) -> PatientSummary:
     base = dict(age=3, chief_complaint="3 year old with cough for 4 days",
                 symptoms=[Symptom(name="cough", duration="4 days")],
-                vital_signs=VitalSigns(respiratory_rate=46), completeness_score=completeness)
+                vital_signs=VitalSigns(respiratory_rate=36), completeness_score=completeness,
+                danger_sign_findings=list(CHECKLIST_ALL_ABSENT))
     base.update(kw)
     return PatientSummary(**base)
 
