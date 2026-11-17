@@ -31,7 +31,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import gradio as gr
-from graph import create_graph, run_turn
+from graph import _get_current_state, create_graph, run_turn
+from output import format_agent_status, format_for_gradio
 from rag.embeddings import warm_up as warm_up_embeddings
 from rag.store import count as store_count
 
@@ -46,6 +47,10 @@ print("[app] Graph ready.")
 # cold model load inside their request (Phase 5).
 warm_up_embeddings()
 print("[app] Embedding model loaded.")
+
+BROWSER_STATE_SECRET = os.getenv("BROWSER_STATE_SECRET") or None
+if BROWSER_STATE_SECRET is None:
+    print("[app] ⚠️  BROWSER_STATE_SECRET not set: open conversations cannot be resumed after a restart.")
 
 # ─── Check knowledge base ─────────────────────────────────────────────────────
 KB_COUNT = store_count()
@@ -69,7 +74,7 @@ def chat(
         user_message: What the health worker typed.
         history:      Gradio chat history in "messages" format
                       [{"role": "user"|"assistant", "content": str}, ...]
-        thread_id:    Unique session ID (stored in gr.State)
+        thread_id:    Unique session ID (kept in the browser, gr.BrowserState)
 
     Returns:
         (updated_history, cleared_input, status_text, triage_card_markdown)
@@ -100,6 +105,26 @@ def chat(
     triage_card = result["triage_card"] if result["is_complete"] else ""
 
     return history, "", status, triage_card
+
+
+def restore_session(thread_id: str | None):
+    """
+    On page load: if the browser holds a thread_id whose state is in the
+    checkpointer (Postgres in production), rebuild the chat so the
+    conversation continues, including after a server restart or a reload.
+    """
+    if not thread_id:
+        return [], str(uuid.uuid4()), _status_text("ready"), ""
+    state = _get_current_state(APP, {"configurable": {"thread_id": thread_id}})
+    if not state:
+        return [], thread_id, _status_text("ready"), ""
+    history = []
+    for m in state.get("messages", []):
+        role = {"human": "user", "ai": "assistant"}.get(m.type)
+        if role and isinstance(m.content, str):
+            history.append({"role": role, "content": m.content})
+    done = state.get("phase") == "done"
+    return history, thread_id, format_agent_status(state), format_for_gradio(state) if done else ""
 
 
 def new_session() -> tuple[list, str, str, str, str]:
@@ -139,7 +164,13 @@ with gr.Blocks(
     )
 
     # ─── Session state (invisible, per-tab) ──────────────────────────────
-    thread_id_state = gr.State(value=str(uuid.uuid4()))
+    # The session id lives in the browser (localStorage), not in server memory,
+    # so a conversation survives a server restart when CHECKPOINT_DB_URL is set.
+    # Gradio encrypts BrowserState with `secret`; without a stable secret it
+    # generates a random one per launch and stored ids are unreadable after a
+    # restart (verified in a real browser). Set BROWSER_STATE_SECRET in production.
+    thread_id_state = gr.BrowserState(default_value=None, storage_key="triage_thread_id",
+                                      secret=BROWSER_STATE_SECRET)
 
     # ─── Main layout ─────────────────────────────────────────────────────
     with gr.Row():
@@ -203,17 +234,24 @@ with gr.Blocks(
     # ─── Event handlers ──────────────────────────────────────────────────
 
     def on_send(msg, hist, tid):
-        return chat(msg, hist, tid)
+        tid = tid or str(uuid.uuid4())
+        return (*chat(msg, hist, tid), tid)
+
+    demo.load(
+        fn=restore_session,
+        inputs=[thread_id_state],
+        outputs=[chatbot, thread_id_state, status_display, triage_output],
+    )
 
     send_btn.click(
         fn=on_send,
         inputs=[msg_input, chatbot, thread_id_state],
-        outputs=[chatbot, msg_input, status_display, triage_output],
+        outputs=[chatbot, msg_input, status_display, triage_output, thread_id_state],
     )
     msg_input.submit(
         fn=on_send,
         inputs=[msg_input, chatbot, thread_id_state],
-        outputs=[chatbot, msg_input, status_display, triage_output],
+        outputs=[chatbot, msg_input, status_display, triage_output, thread_id_state],
     )
     new_btn.click(
         fn=new_session,

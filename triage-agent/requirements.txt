@@ -1,5 +1,6 @@
-# Exact pins: the versions the test suite and the end-to-end eval were run with
-# (Python 3.13). Upgrade deliberately and re-run `pytest` + `python -m eval.run_eval`.
+# Runtime dependencies, exact pins: the versions the test suite and the
+# end-to-end eval were run with (Python 3.13). Upgrade deliberately and re-run
+# `pytest` + `python -m eval.run_eval`. Test tools: requirements-dev.txt.
 
 # ─── Core Agent Framework ───
 langgraph==1.2.22
@@ -9,6 +10,10 @@ langchain-core==1.8.1
 # ─── LLM Providers ───
 langchain-anthropic==1.7.10      # Claude API integration (default provider)
 langchain-openai==1.8.0          # OpenAI, and any OpenAI-compatible endpoint (e.g. Gemini)
+# Gemini on Vertex AI (LLM_PROVIDER=vertexai). google-genai >= 2.9 needs
+# pydantic >= 2.12.5, which conflicts with gradio 5.50.0 (pydantic <= 2.12.3).
+langchain-google-genai==4.3.0
+google-genai==2.8.0
 
 # ─── Session persistence (CHECKPOINT_DB_URL) ───
 langgraph-checkpoint-postgres==3.2.1
@@ -18,6 +23,7 @@ psycopg-pool==3.3.3
 # ─── RAG Pipeline ───
 chromadb==1.5.9                  # Vector store
 sentence-transformers==6.3.0     # Local embedding model (all-MiniLM-L6-v2)
+torch==2.15.0                    # the Docker image installs the +cpu build
 
 # ─── PDF Processing (for guideline ingestion) ───
 pymupdf==2.1                     # PDF text extraction (import as fitz)
@@ -30,10 +36,6 @@ pydantic==2.12.3
 # 6.x removed gr.Chatbot(bubble_full_width=...) and the tuple history format;
 # app.py is verified on 5.50.0.
 gradio==5.50.0
-
-# ─── Testing ───
-pytest==9.2.0
-pytest-asyncio==1.5.0
 
 # ─── Utilities ───
 python-dotenv==1.2.3             # .env file for API keys

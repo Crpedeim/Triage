@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+chroma_db/
+.pytest_cache/
+eval/results/
+desktop.ini
+Dockerfile
+.dockerignore

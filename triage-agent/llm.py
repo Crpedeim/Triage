@@ -11,6 +11,9 @@ Supported providers (set LLM_PROVIDER in .env):
     groq        → Llama 3.3 70B via Groq (fastest inference, free tier)
     together    → Llama 3.3 70B via Together AI (good free tier)
     ollama      → Any local model via Ollama (fully offline, no API key)
+    vertexai    → Gemini on Google Cloud Vertex AI (Application Default
+                  Credentials; set GOOGLE_CLOUD_PROJECT, optional
+                  GOOGLE_CLOUD_LOCATION, default "global")
 
 WHY THIS ABSTRACTION EXISTS:
 LangChain normalises all chat models behind BaseChatModel. The .invoke(), .stream(),
@@ -47,7 +50,7 @@ from langchain_core.language_models import BaseChatModel
 load_dotenv()
 
 # ─── Supported provider type ───
-Provider = Literal["anthropic", "openai", "groq", "together", "ollama"]
+Provider = Literal["anthropic", "openai", "groq", "together", "ollama", "vertexai"]
 
 # ─── Model name overrides per provider ───
 # These are the defaults. Override via MODEL_NAME in .env for any provider.
@@ -57,6 +60,9 @@ DEFAULT_MODELS: dict[str, str] = {
     "groq": "llama-3.3-70b-versatile",
     "together": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
     "ollama": "llama3.2",          # run: ollama pull llama3.2
+    # The Gemini models the eval suite was run with (via the Gemini API).
+    # Check availability in your Vertex AI project/region before deploying.
+    "vertexai": "gemini-3.1-pro-preview",
 }
 
 # Fast/cheap model overrides per provider (used for simpler tasks like conversation)
@@ -66,6 +72,7 @@ FAST_MODELS: dict[str, str] = {
     "groq": "llama-3.1-8b-instant",
     "together": "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
     "ollama": "llama3.2",
+    "vertexai": "gemini-3.8-flash",
 }
 
 
@@ -174,6 +181,25 @@ def _build_llm(model_name: str, provider: Provider, temperature: float = 0.0) ->
             model=model_name,
             temperature=temperature,
             base_url=base_url,
+        )
+
+    elif provider == "vertexai":
+        # Gemini through Vertex AI. Auth = Application Default Credentials:
+        # the Cloud Run service account in production, `gcloud auth
+        # application-default login` locally. No API key.
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        if not project:
+            raise EnvironmentError(
+                "GOOGLE_CLOUD_PROJECT not set (required for LLM_PROVIDER=vertexai)."
+            )
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            temperature=temperature,
+            vertexai=True,
+            project=project,
+            location=os.getenv("GOOGLE_CLOUD_LOCATION", "global"),
+            max_retries=int(os.getenv("LLM_MAX_RETRIES", "2")),
         )
 
     raise ValueError(f"Unknown provider: {provider}")
