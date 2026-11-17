@@ -498,3 +498,37 @@ ADK, because it gets fewer chunks (2 vs 5), but the extra flash-model calls
 are unpriced, so the total cost comparison is unknown. The knowledge base
 has only 8 chunks, which leaves a search-and-refine agent little to find. A
 real guideline corpus might change the trade-off; that is untested.
+
+---
+
+# Round 2: real guidelines, persistence, public deployment
+
+Same rules as above: every number comes from a command that was run, and
+anything not measured is marked NOT MEASURED. Work branch:
+`claude/who-guidelines-hardening`, cut from `main` at `e6230ed`.
+
+## R2 Phase 0: save the work
+
+**Done:**
+- `main` was fast-forwarded from `1c58788` (README only) to `e6230ed` (the
+  end of Phases 0–7 above, branch `claude/adoring-goldberg-d2ncfb`) and
+  pushed to `origin/main`. No merge commit was needed.
+- A separate quick-deploy branch, `claude/google-cloud-deploy-c09829`
+  (commit `13ceea9`), was committed and pushed but **not merged**. It
+  changed 9 of the same files as Phases 0–7 and is superseded by them. It
+  is what currently runs on Cloud Run (see below).
+- A secret scan of both branches (Google API keys, Anthropic/OpenAI keys,
+  Postgres URLs with passwords, `.env`/key files) found nothing.
+
+**Deployment state at the start of Round 2** (corrects "Nothing is
+deployed" in `RESUME_FACTS.md`, which was written before this):
+- Cloud Run service `triage-ai`, project `gen-lang-client-0005933941`,
+  region `us-central1`, public URL
+  `https://triage-ai-827630707333.us-central1.run.app`, revision
+  `triage-ai-00003-kgl`.
+- It runs the quick-deploy branch, not `main`: the native Gemini provider
+  (`gemini-flash-latest`), the 8 sample chunks, in-memory sessions and
+  `max-instances 1`. The Gemini key is read from Secret Manager
+  (`gemini-api-key`).
+- One manual browser check of case A on that revision returned EMERGENCY.
+  No other measurements were taken on it.
