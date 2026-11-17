@@ -55,15 +55,8 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage  # no
 SEVERITY = {"self_care": 0, "standard": 1, "urgent": 2, "emergency": 3}
 NODE_NAMES = {"supervisor", "intake", "retrieval", "triage", "output"}
 
-# USD per 1M tokens. Only prices from a cited source go here.
-# gemini-3.1-pro-preview: $2 input / $12 output (prompts <= 200k), as quoted in
-# search results for https://ai.google.dev/gemini-api/docs/pricing (2026-11-16).
-# The page itself could not be opened from the build environment.
-# Whether "reasoning" tokens (total - input - output) are billed is not
-# verified, so cost is reported both ways.
-PRICES_PER_M: dict[str, dict[str, float]] = {
-    "gemini-3.1-pro-preview": {"input": 2.0, "output": 12.0},
-}
+# Prices live in pricing.py (shared with tracing). Unpriced models → unknown cost.
+from pricing import PRICES_PER_M  # noqa: E402
 
 MAX_CAREGIVER_TURNS = int(os.getenv("EVAL_MAX_CAREGIVER_TURNS", "10"))
 MAX_STEPS = int(os.getenv("EVAL_MAX_STEPS", "30"))

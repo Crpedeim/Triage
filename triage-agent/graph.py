@@ -41,13 +41,11 @@ HUMAN-IN-THE-LOOP (one graph run per user turn):
   resume step and never re-executes LLM calls.
 
 CHECKPOINTER:
-  MemorySaver stores graph state in memory keyed by thread_id.
-  Each user session gets a unique thread_id. Between HTTP requests,
-  the checkpointer restores the exact graph state so execution
-  continues from where it left off.
-
-  For production: replace MemorySaver with SqliteSaver or PostgresSaver.
-  The rest of the code is identical.
+  State is checkpointed per thread_id (one per user session). Between turns
+  the checkpointer restores the exact graph state.
+  checkpointing.make_checkpointer() returns LangGraph's PostgresSaver when
+  CHECKPOINT_DB_URL is set (sessions survive restarts and are shared across
+  instances) and an in-memory saver otherwise (dev/tests).
 
 USAGE:
   from graph import create_graph, run_turn
@@ -73,13 +71,14 @@ from __future__ import annotations
 from typing import Any
 
 from langchain_core.messages import HumanMessage
-from langgraph.checkpoint.memory import MemorySaver
+from checkpointing import make_checkpointer
 from langgraph.graph import END, StateGraph
 
 from agents.intake import intake_agent
 from agents.retrieval import retrieval_agent
 from agents.supervisor import route_next, supervisor
 from agents.triage import triage_agent
+import tracing
 from output import format_for_gradio, format_agent_status
 from state import Phase, TriageState, create_initial_state
 
@@ -102,8 +101,9 @@ def create_graph(checkpointer=None):
 
     Args:
         checkpointer: LangGraph checkpointer for state persistence.
-                      Defaults to MemorySaver (in-memory, per-process).
-                      For production: SqliteSaver("triage.db") or PostgresSaver.
+                      Defaults to checkpointing.make_checkpointer():
+                      PostgresSaver when CHECKPOINT_DB_URL is set (sessions
+                      survive restarts), otherwise in-memory.
 
     Returns:
         Compiled LangGraph app (CompiledStateGraph) ready to invoke.
@@ -121,7 +121,7 @@ def create_graph(checkpointer=None):
         output → END
     """
     if checkpointer is None:
-        checkpointer = MemorySaver()
+        checkpointer = make_checkpointer()
 
     graph = StateGraph(TriageState)
 
@@ -200,17 +200,29 @@ def run_turn(
     thread_config: dict = dict(config or {})
     thread_config["configurable"] = {**(thread_config.get("configurable") or {}), "thread_id": thread_id}
 
+    # Tracing (no-op unless TRACE_API_URL and TRACE_API_KEY are set)
+    tracer = tracing.get_tracer()
+    turn_trace = tracer.new_turn(thread_id, user_message)
+    if turn_trace is not None:
+        thread_config["callbacks"] = list(thread_config.get("callbacks") or []) + [turn_trace]
+
     current_state = _get_current_state(app, thread_config)
     user_input = {"messages": [HumanMessage(content=user_message)], "awaiting_user": False}
 
-    if current_state is None:
-        # New session: full initial state + first message
-        initial = create_initial_state()
-        initial.update(user_input)
-        app.invoke(initial, config=thread_config)
-    else:
-        # Existing session: merge the reply into the saved state and run one turn
-        app.invoke(user_input, config=thread_config)
+    try:
+        if current_state is None:
+            # New session: full initial state + first message
+            initial = create_initial_state()
+            initial.update(user_input)
+            app.invoke(initial, config=thread_config)
+        else:
+            # Existing session: merge the reply into the saved state and run one turn
+            app.invoke(user_input, config=thread_config)
+    except Exception:
+        if turn_trace is not None:
+            tracer.submit(turn_trace.build_payload(output="", state=_get_current_state(app, thread_config),
+                                                   status="error", service=tracer.service))
+        raise
 
     # ─── Read the updated state ───────────────────────────────────────────
     state = _get_current_state(app, thread_config)
@@ -229,6 +241,9 @@ def run_turn(
     last_ai_message = _get_last_ai_message(state)
     phase = state.get("phase", Phase.INTAKE.value)
     is_complete = phase == Phase.DONE.value
+
+    if turn_trace is not None:
+        tracer.submit(turn_trace.build_payload(output=last_ai_message, state=state, service=tracer.service))
 
     return {
         "message": last_ai_message,

@@ -10,6 +10,11 @@ langchain-core==1.8.1
 langchain-anthropic==1.7.10      # Claude API integration (default provider)
 langchain-openai==1.8.0          # OpenAI, and any OpenAI-compatible endpoint (e.g. Gemini)
 
+# ─── Session persistence (CHECKPOINT_DB_URL) ───
+langgraph-checkpoint-postgres==3.2.1
+psycopg[binary]==3.3.9
+psycopg-pool==3.3.3
+
 # ─── RAG Pipeline ───
 chromadb==1.5.9                  # Vector store
 sentence-transformers==6.3.0     # Local embedding model (all-MiniLM-L6-v2)

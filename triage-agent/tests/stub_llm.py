@@ -10,10 +10,18 @@ Every call is logged so tests can assert which agents ran and how often.
 from __future__ import annotations
 
 from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration, LLMResult
+from langchain_core.runnables.config import ensure_config, get_callback_manager_for_config
+
+# Token usage reported for every stub call (lets tracing/eval code be tested)
+STUB_USAGE = {"input_tokens": 100, "output_tokens": 20, "total_tokens": 150}
 
 
 class StubLLM:
-    def __init__(self, structured: dict | None = None, questions: list[str] | None = None):
+    def __init__(self, structured: dict | None = None, questions: list[str] | None = None,
+                 model: str = "stub-model", fail_kinds: tuple[str, ...] = ()):
+        self.model = model
+        self.fail_kinds = fail_kinds
         # schema name -> list of results (last one repeats when exhausted)
         self.structured = {k: list(v) for k, v in (structured or {}).items()}
         self.questions = list(questions or [])
@@ -23,8 +31,31 @@ class StubLLM:
     def with_structured_output(self, schema, **_kw):
         return _Structured(self, schema)
 
+    def _traced(self, messages, kind: str, fn):
+        """Fire on_chat_model_start / on_llm_end like a real chat model, via the ambient config."""
+        cm = get_callback_manager_for_config(ensure_config())
+        runs = cm.on_chat_model_start({"name": "StubLLM"}, [list(messages)], invocation_params={"model": self.model})
+        try:
+            if kind in self.fail_kinds:
+                raise RuntimeError(f"stub failure: {kind}")
+            out = fn()
+        except Exception as e:
+            for r in runs:
+                r.on_llm_error(e)
+            raise
+        content = out.content if isinstance(out, AIMessage) else "structured-output"
+        for r in runs:
+            r.on_llm_end(LLMResult(generations=[[ChatGeneration(
+                message=AIMessage(content=content, usage_metadata=dict(STUB_USAGE)))]]))
+        return out
+
     def invoke(self, messages, *args, **kwargs):
         system = str(messages[0].content) if messages else ""
+        kind = ("relevance_judge" if "retrieval evaluator" in system else "query_gen" if "search query" in system
+                else "completion" if "intake is complete" in system else "question")
+        return self._traced(messages, kind, lambda: self._plain(messages, system))
+
+    def _plain(self, messages, system):
         if "retrieval evaluator" in system:
             kind, text = "relevance_judge", '{"score": 4, "missing_aspects": [], "reasoning": "stub"}'
         elif "search query" in system:
@@ -50,6 +81,9 @@ class _Structured:
         self.parent, self.schema = parent, schema
 
     def invoke(self, messages, *args, **kwargs):
+        return self.parent._traced(messages, f"structured:{self.schema.__name__}", lambda: self._invoke(messages))
+
+    def _invoke(self, messages):
         name = self.schema.__name__
         queue = self.parent.structured.get(name)
         if not queue:
