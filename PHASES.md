@@ -222,3 +222,66 @@ This is a real production cold-start bug, fixed in Phase 5.
 
 Fewer LLM calls per case (9 → 7) is expected: checklist questions are
 fixed text, which replaces the LLM question call on those turns.
+
+---
+
+## Phase 4: session state and tracing (commit `9669308`)
+
+**Changed:**
+- **`checkpointing.make_checkpointer()`.** With `CHECKPOINT_DB_URL` set it
+  returns LangGraph's `PostgresSaver` (`langgraph-checkpoint-postgres==3.2.1`)
+  on a psycopg connection pool; `setup()` creates or migrates the tables.
+  Otherwise it returns the in-memory saver. Both use a serializer with an
+  explicit allowlist of the project's state types: without it LangGraph logs
+  "Deserializing unregistered type ... will be blocked in a future version"
+  for `PatientSummary`, `TriageResult` and friends (verified), which with a
+  persistent store would leave saved sessions unreadable after an upgrade.
+- **`tracing.py`.** One trace per `run_turn()`, `POST {TRACE_API_URL}/api/v1/traces`.
+  - The `spans` array has one span per agent node and a child span per LLM
+    call, each with latency, tokens (input, output, reasoning, total) and
+    cost. Cost is `null` when a model has no known price: a partial sum is
+    never reported as the total.
+  - Key from `TRACE_API_KEY`, sent as Bearer (or in `TRACE_API_KEY_HEADER`).
+  - A background sender with a bounded queue makes 3 attempts on
+    5xx/429/network errors and none on other 4xx. It never raises into, or
+    waits on, a triage.
+  - **The payload field names are an assumed shape**: the platform's schema
+    wasn't available, so they're documented in the module docstring and need
+    checking against the platform before you connect it.
+- `pricing.py`: one price table shared by the eval and tracing.
+
+**Tests:** at `9669308`, 213 passed, 1 skipped with `TEST_POSTGRES_URL` set
+(local PostgreSQL 16.x server), and 211 passed, 3 skipped without it (the 2
+Postgres tests skip).
+- `tests/test_postgres_checkpoint.py`: each turn of a 3-turn session runs in
+  a **separate OS process** against Postgres (state restored every turn,
+  exactly one extraction per process), thread isolation checked in the
+  `checkpoints` table, and the serializer round-trip with no
+  "unregistered" warning.
+- `tests/test_tracing.py` (8 tests) runs against a local mock platform:
+  - path, Bearer key, custom key header
+  - one trace per turn, agent and LLM spans, per-agent rollups, cost null when unpriced
+  - 5xx retried 3 times and 4xx not retried
+  - platform down never breaking a triage
+  - LLM errors recorded as error spans
+
+**End-to-end check with real Gemini calls** (`eval/results/phase4_e2e_traces.json`):
+one case (B, pneumonia) driven through `run_turn()`. **Every turn ran in a
+new OS process** with `CHECKPOINT_DB_URL` pointing at Postgres, and tracing
+went to a local mock platform.
+
+| Turn | Process | Turn time | Human messages restored from Postgres | Trace delivered |
+|---|---|---|---|---|
+| 1 | new | 8.13 s | 1 | yes |
+| 2 | new | 9.98 s | 2 | yes |
+| 3 (completes) | new | 48.59 s | 3 | yes |
+
+Final level `urgent` (expected `urgent`). 3/3 traces received at
+`/api/v1/traces` with the right key, 0 failed.
+
+In the completing turn's trace, the agent spans were:
+- intake 16,172.6 ms (2 LLM calls)
+- retrieval 17,376.0 ms (2 calls: query generation and the judge)
+- triage 14,955.5 ms (1 call, 4,666 tokens, $0.031092 with reasoning billed)
+
+The trace total cost was `null`, because `gemini-3.8-flash` is unpriced.

@@ -1,0 +1,490 @@
+[
+ {
+  "path": "/api/v1/traces",
+  "auth": "Bearer local-test-key",
+  "json": {
+   "trace_id": "40b38a68-78fd-4b95-ade7-3034ad57475a",
+   "name": "triage_turn",
+   "session_id": "e2e-711b2d09-1dbb-4dbb-97eb-4368a49ffc67",
+   "service": "triage-ai",
+   "start_time": "2026-11-17T01:11:33.882142+00:00",
+   "end_time": "2026-11-17T01:11:41.722552+00:00",
+   "latency_ms": 7840.4,
+   "input": "My daughter is 3 and has had a cough for 3 days, she is breathing a bit quickly.",
+   "output": "I need to check for danger signs. Is the child able to drink or breastfeed? Does the child vomit everything? Has the child had any fits (convulsions) in this illness? Is the child unusually sleepy or hard to wake?",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 787,
+    "output_tokens": 238,
+    "reasoning_tokens": 486,
+    "total_tokens": 1511
+   },
+   "cost_usd": null,
+   "metadata": {
+    "phase": "intake",
+    "triage_level": null,
+    "triage_confidence": 0.0,
+    "models": [
+     "gemini-3.8-flash"
+    ],
+    "llm_calls": 1
+   },
+   "spans": [
+    {
+     "span_id": "7bc9def5-d57c-4e53-9981-d1c0d6f81918",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:33.934202+00:00",
+     "end_time": "2026-11-17T01:11:33.934412+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "275b9de3-6cf2-4d45-95a7-533f134ea33f",
+     "parent_span_id": null,
+     "name": "intake",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:33.936629+00:00",
+     "end_time": "2026-11-17T01:11:41.713697+00:00",
+     "latency_ms": 7777.1,
+     "llm_calls": 1,
+     "usage": {
+      "input_tokens": 787,
+      "output_tokens": 238,
+      "reasoning_tokens": 486,
+      "total_tokens": 1511
+     },
+     "cost_usd": null
+    },
+    {
+     "span_id": "baa1ee34-5602-4dfc-b4af-7bdf30d09ec1",
+     "parent_span_id": "275b9de3-6cf2-4d45-95a7-533f134ea33f",
+     "name": "llm",
+     "type": "llm",
+     "agent": "intake",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 787,
+      "output_tokens": 238,
+      "reasoning_tokens": 486,
+      "total_tokens": 1511
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:11:34.473321+00:00",
+     "end_time": "2026-11-17T01:11:41.712697+00:00",
+     "latency_ms": 7239.4
+    },
+    {
+     "span_id": "76c7d65d-8eb8-46c2-9415-f3c8966cc26c",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:41.714505+00:00",
+     "end_time": "2026-11-17T01:11:41.714687+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    }
+   ]
+  }
+ },
+ {
+  "path": "/api/v1/traces",
+  "auth": "Bearer local-test-key",
+  "json": {
+   "trace_id": "e49875e6-b0cf-4335-8e7e-e8c53592cae4",
+   "name": "triage_turn",
+   "session_id": "e2e-711b2d09-1dbb-4dbb-97eb-4368a49ffc67",
+   "service": "triage-ai",
+   "start_time": "2026-11-17T01:11:47.326588+00:00",
+   "end_time": "2026-11-17T01:11:57.243249+00:00",
+   "latency_ms": 9916.7,
+   "input": "She is drinking and eating normally, is not vomiting, and has had no convulsions. She is not unusually sleepy; she is alert and playful.",
+   "output": "Please count the child's breaths for one full minute while the child is calm: how many breaths? Does the lower chest pull in when the child breathes in? Is there a harsh noise when the child breathes in while calm?",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 866,
+    "output_tokens": 380,
+    "reasoning_tokens": 482,
+    "total_tokens": 1728
+   },
+   "cost_usd": null,
+   "metadata": {
+    "phase": "intake",
+    "triage_level": null,
+    "triage_confidence": 0.0,
+    "models": [
+     "gemini-3.8-flash"
+    ],
+    "llm_calls": 1
+   },
+   "spans": [
+    {
+     "span_id": "db77b948-9b01-4752-a6bf-8ac9a7dfe9eb",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:47.335645+00:00",
+     "end_time": "2026-11-17T01:11:47.335850+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "b029fb5c-5b41-49a1-8080-a51fcd34957a",
+     "parent_span_id": null,
+     "name": "intake",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:47.337345+00:00",
+     "end_time": "2026-11-17T01:11:57.234078+00:00",
+     "latency_ms": 9896.7,
+     "llm_calls": 1,
+     "usage": {
+      "input_tokens": 866,
+      "output_tokens": 380,
+      "reasoning_tokens": 482,
+      "total_tokens": 1728
+     },
+     "cost_usd": null
+    },
+    {
+     "span_id": "d8888ded-6ffd-457e-98f0-4fda85b952e1",
+     "parent_span_id": "b029fb5c-5b41-49a1-8080-a51fcd34957a",
+     "name": "llm",
+     "type": "llm",
+     "agent": "intake",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 866,
+      "output_tokens": 380,
+      "reasoning_tokens": 482,
+      "total_tokens": 1728
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:11:47.834016+00:00",
+     "end_time": "2026-11-17T01:11:57.232680+00:00",
+     "latency_ms": 9398.7
+    },
+    {
+     "span_id": "02f7b561-4c3a-491d-84bf-7c4d997e3f26",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:11:57.235200+00:00",
+     "end_time": "2026-11-17T01:11:57.235457+00:00",
+     "latency_ms": 0.3,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    }
+   ]
+  }
+ },
+ {
+  "path": "/api/v1/traces",
+  "auth": "Bearer local-test-key",
+  "json": {
+   "trace_id": "5ee248ec-402b-4e3c-8700-cec6ac256502",
+   "name": "triage_turn",
+   "session_id": "e2e-711b2d09-1dbb-4dbb-97eb-4368a49ffc67",
+   "service": "triage-ai",
+   "start_time": "2026-11-17T01:12:02.665703+00:00",
+   "end_time": "2026-11-17T01:12:51.194661+00:00",
+   "latency_ms": 48529.0,
+   "input": "I counted 46 breaths in one minute while she was calm. Her lower chest does not pull in, and there is no harsh noise when she breathes.",
+   "output": "Thank you for providing these details; I have enough information and am now analyzing the case for you.",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 4820,
+    "output_tokens": 1531,
+    "reasoning_tokens": 3783,
+    "total_tokens": 10134
+   },
+   "cost_usd": null,
+   "metadata": {
+    "phase": "done",
+    "triage_level": "urgent",
+    "triage_confidence": 0.95,
+    "models": [
+     "gemini-3.1-pro-preview",
+     "gemini-3.8-flash"
+    ],
+    "llm_calls": 5
+   },
+   "spans": [
+    {
+     "span_id": "19ac7345-e125-44e0-b894-3e958b04ff4e",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:02.674760+00:00",
+     "end_time": "2026-11-17T01:12:02.674945+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "9c3e662e-a492-4418-961d-f365f6241a75",
+     "parent_span_id": null,
+     "name": "intake",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:02.676550+00:00",
+     "end_time": "2026-11-17T01:12:18.849187+00:00",
+     "latency_ms": 16172.6,
+     "llm_calls": 2,
+     "usage": {
+      "input_tokens": 1033,
+      "output_tokens": 526,
+      "reasoning_tokens": 1385,
+      "total_tokens": 2944
+     },
+     "cost_usd": null
+    },
+    {
+     "span_id": "ae16957d-e870-460e-b679-42c7bfe98458",
+     "parent_span_id": "9c3e662e-a492-4418-961d-f365f6241a75",
+     "name": "llm",
+     "type": "llm",
+     "agent": "intake",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 946,
+      "output_tokens": 506,
+      "reasoning_tokens": 1006,
+      "total_tokens": 2458
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:12:03.214022+00:00",
+     "end_time": "2026-11-17T01:12:14.349605+00:00",
+     "latency_ms": 11135.6
+    },
+    {
+     "span_id": "bfa52aed-efdb-44fa-a739-125875bc3486",
+     "parent_span_id": "9c3e662e-a492-4418-961d-f365f6241a75",
+     "name": "llm",
+     "type": "llm",
+     "agent": "intake",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 87,
+      "output_tokens": 20,
+      "reasoning_tokens": 379,
+      "total_tokens": 486
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:12:14.350723+00:00",
+     "end_time": "2026-11-17T01:12:18.848985+00:00",
+     "latency_ms": 4498.3
+    },
+    {
+     "span_id": "44c7c42e-6ec1-4a0c-8486-f1b1ebe2d859",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:18.850062+00:00",
+     "end_time": "2026-11-17T01:12:18.850260+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "900f3bae-7015-4e86-abe2-90f40f209c28",
+     "parent_span_id": null,
+     "name": "retrieval",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:18.851051+00:00",
+     "end_time": "2026-11-17T01:12:36.227034+00:00",
+     "latency_ms": 17376.0,
+     "llm_calls": 2,
+     "usage": {
+      "input_tokens": 1297,
+      "output_tokens": 134,
+      "reasoning_tokens": 1093,
+      "total_tokens": 2524
+     },
+     "cost_usd": null
+    },
+    {
+     "span_id": "455200ac-bad8-4b8f-a519-be3953a72ce7",
+     "parent_span_id": "900f3bae-7015-4e86-abe2-90f40f209c28",
+     "name": "llm",
+     "type": "llm",
+     "agent": "retrieval",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 269,
+      "output_tokens": 68,
+      "reasoning_tokens": 651,
+      "total_tokens": 988
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:12:18.851890+00:00",
+     "end_time": "2026-11-17T01:12:25.511963+00:00",
+     "latency_ms": 6660.1
+    },
+    {
+     "span_id": "b57ab309-dd36-4269-818a-1e80c3d9c14a",
+     "parent_span_id": "900f3bae-7015-4e86-abe2-90f40f209c28",
+     "name": "llm",
+     "type": "llm",
+     "agent": "retrieval",
+     "model": "gemini-3.8-flash",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 1028,
+      "output_tokens": 66,
+      "reasoning_tokens": 442,
+      "total_tokens": 1536
+     },
+     "cost_usd": null,
+     "start_time": "2026-11-17T01:12:30.383161+00:00",
+     "end_time": "2026-11-17T01:12:36.226722+00:00",
+     "latency_ms": 5843.6
+    },
+    {
+     "span_id": "915e53bd-7202-4278-aad7-a9b27077e820",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:36.228033+00:00",
+     "end_time": "2026-11-17T01:12:36.228231+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "4e4c52c9-f4b9-4410-baf0-5e005a8494e5",
+     "parent_span_id": null,
+     "name": "triage",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:36.228710+00:00",
+     "end_time": "2026-11-17T01:12:51.184213+00:00",
+     "latency_ms": 14955.5,
+     "llm_calls": 1,
+     "usage": {
+      "input_tokens": 2490,
+      "output_tokens": 871,
+      "reasoning_tokens": 1305,
+      "total_tokens": 4666
+     },
+     "cost_usd": 0.031092
+    },
+    {
+     "span_id": "bc559e8b-6673-4141-9cc9-f59b68f32c1e",
+     "parent_span_id": "4e4c52c9-f4b9-4410-baf0-5e005a8494e5",
+     "name": "llm",
+     "type": "llm",
+     "agent": "triage",
+     "model": "gemini-3.1-pro-preview",
+     "status": "ok",
+     "usage": {
+      "input_tokens": 2490,
+      "output_tokens": 871,
+      "reasoning_tokens": 1305,
+      "total_tokens": 4666
+     },
+     "cost_usd": 0.031092,
+     "start_time": "2026-11-17T01:12:36.231020+00:00",
+     "end_time": "2026-11-17T01:12:51.183204+00:00",
+     "latency_ms": 14952.2
+    },
+    {
+     "span_id": "eb7374d6-1467-436c-a7c7-e9b022307827",
+     "parent_span_id": null,
+     "name": "supervisor",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:51.184793+00:00",
+     "end_time": "2026-11-17T01:12:51.184963+00:00",
+     "latency_ms": 0.2,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    },
+    {
+     "span_id": "e204c3ef-e7c4-4574-9e62-b77cf9d3894a",
+     "parent_span_id": null,
+     "name": "output",
+     "type": "agent",
+     "status": "ok",
+     "start_time": "2026-11-17T01:12:51.185337+00:00",
+     "end_time": "2026-11-17T01:12:51.185379+00:00",
+     "latency_ms": 0.0,
+     "llm_calls": 0,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+     },
+     "cost_usd": 0.0
+    }
+   ]
+  }
+ }
+]
