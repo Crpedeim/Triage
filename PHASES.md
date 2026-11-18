@@ -1297,3 +1297,28 @@ reasoning):
 
 The control traces stay in the production TriageAI project, tagged
 `negativeControl` / `positiveControl` with their own `evalLabel`s.
+
+## Final check (2026-11-18, `main` at `bafb9b2`)
+
+- **Repo:** the working tree is clean and `main` matches the branch.
+  - A secret scan of the tracked files and the whole git history (API keys,
+    tokens, Postgres URLs with passwords) found only the
+    `postgresql://user:pass@host` placeholder in `checkpointing.py`.
+  - No `.env` or PDF is tracked.
+- **Live service:** revision `triage-ai-00006-bgc` serves 100% of traffic,
+  with max 2 instances and session affinity.
+  - After an overnight scale to zero, the first `GET /` took **67.62 s**;
+    the next took 1.01 s.
+- **Live cases** (`deploy/live_cases.py`, public URL): A → EMERGENCY,
+  B → URGENT, C → SELF CARE, **3/3**, each card citing WHO IMCI sections.
+  Per-turn median 16.97 s (11.18–27.78 s, 8 turns).
+- **Eval platform:** 8 turns → **8 traces** (3 `triage.final`), 61 spans.
+  - All 9 judge runs finished and passed: safety 3/3, grounding 3/3
+    (scores 1.0, 0.75, 1.0), level 3/3.
+  - Cost per triage: median $0.048875 ($0.033643–$0.050316).
+- **Rate limits:** a 2,001-character message was refused in 1.45 s with
+  "Message too long", without reaching the LLM. Live config: 20/600 s per
+  session, 60/3600 s per IP, 2,000 characters.
+- **Tests:** 278 passed, 4 skipped, 0 failed.
+- **Public repo:** `README.md` and the three `docs/` screenshots load from
+  `raw.githubusercontent.com` on `main` (HTTP 200).
